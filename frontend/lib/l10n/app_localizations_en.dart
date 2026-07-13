@@ -276,6 +276,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nothingScannedYet => 'Nothing scanned yet.';
 
   @override
+  String get scanModeAdd => 'Add';
+
+  @override
+  String get scanModeOpen => 'Open';
+
+  @override
+  String get scanModeUse => 'Use';
+
+  @override
+  String get scanModeDiscard => 'Discard';
+
+  @override
+  String get nothingToActOn =>
+      'Nothing to act on -- unknown barcode or no stock for it.';
+
+  @override
+  String scannedOpened(String name) {
+    return 'Marked \"$name\" as opened.';
+  }
+
+  @override
+  String scannedUsed(String name) {
+    return 'Used \"$name\".';
+  }
+
+  @override
+  String scannedDiscarded(String name) {
+    return 'Discarded \"$name\".';
+  }
+
+  @override
   String get newLocationTitle => 'New location';
 
   @override

@@ -132,6 +132,23 @@
   "recentlyScanned": "Recently scanned",
   "pendingScans": "Pending scans",
   "nothingScannedYet": "Nothing scanned yet.",
+  "scanModeAdd": "Add",
+  "scanModeOpen": "Open",
+  "scanModeUse": "Use",
+  "scanModeDiscard": "Discard",
+  "nothingToActOn": "Nothing to act on -- unknown barcode or no stock for it.",
+  "scannedOpened": "Marked \"{name}\" as opened.",
+  "@scannedOpened": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "scannedUsed": "Used \"{name}\".",
+  "@scannedUsed": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "scannedDiscarded": "Discarded \"{name}\".",
+  "@scannedDiscarded": {
+    "placeholders": { "name": { "type": "String" } }
+  },
 
   "newLocationTitle": "New location",
   "couldNotAddLocation": "Could not add location: {error}",

@@ -566,6 +566,54 @@ abstract class AppLocalizations {
   /// **'Nothing scanned yet.'**
   String get nothingScannedYet;
 
+  /// No description provided for @scanModeAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get scanModeAdd;
+
+  /// No description provided for @scanModeOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get scanModeOpen;
+
+  /// No description provided for @scanModeUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Use'**
+  String get scanModeUse;
+
+  /// No description provided for @scanModeDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get scanModeDiscard;
+
+  /// No description provided for @nothingToActOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to act on -- unknown barcode or no stock for it.'**
+  String get nothingToActOn;
+
+  /// No description provided for @scannedOpened.
+  ///
+  /// In en, this message translates to:
+  /// **'Marked \"{name}\" as opened.'**
+  String scannedOpened(String name);
+
+  /// No description provided for @scannedUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Used \"{name}\".'**
+  String scannedUsed(String name);
+
+  /// No description provided for @scannedDiscarded.
+  ///
+  /// In en, this message translates to:
+  /// **'Discarded \"{name}\".'**
+  String scannedDiscarded(String name);
+
   /// No description provided for @newLocationTitle.
   ///
   /// In en, this message translates to:
