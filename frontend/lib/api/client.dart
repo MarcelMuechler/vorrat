@@ -145,9 +145,15 @@ class ApiClient {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
-  Future<List<StockItem>> listStock({int? locationId, String? search, int? expiringWithinDays}) async {
+  Future<List<StockItem>> listStock({
+    int? locationId,
+    int? productId,
+    String? search,
+    int? expiringWithinDays,
+  }) async {
     final query = <String, String>{};
     if (locationId != null) query['location_id'] = '$locationId';
+    if (productId != null) query['product_id'] = '$productId';
     if (search != null && search.isNotEmpty) query['search'] = search;
     if (expiringWithinDays != null) query['expiring_within_days'] = '$expiringWithinDays';
     final res = await http.get(_uri('/api/stock', query));

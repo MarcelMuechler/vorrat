@@ -32,6 +32,7 @@ def _status(best_before_date: date | None, expiring_soon_days: int) -> str:
 @router.get("", response_model=list[StockOverviewItem])
 def list_stock(
     location_id: int | None = None,
+    product_id: int | None = None,
     search: str | None = None,
     expiring_within_days: int | None = None,
     db: Session = Depends(get_db),
@@ -46,6 +47,8 @@ def list_stock(
     )
     if location_id is not None:
         query = query.filter(StockEntry.location_id == location_id)
+    if product_id is not None:
+        query = query.filter(StockEntry.product_id == product_id)
     if search:
         query = query.filter(Product.name.ilike(f"%{escape_like(search)}%", escape="\\"))
     if expiring_within_days is not None:

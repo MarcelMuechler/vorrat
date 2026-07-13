@@ -32,7 +32,12 @@ class FakeApiClient extends ApiClient {
   Future<void> addStock(Map<String, dynamic> payload) async {}
 
   @override
-  Future<List<StockItem>> listStock({int? locationId, String? search, int? expiringWithinDays}) async => [];
+  Future<List<StockItem>> listStock({
+    int? locationId,
+    int? productId,
+    String? search,
+    int? expiringWithinDays,
+  }) async => [];
 }
 
 void main() {

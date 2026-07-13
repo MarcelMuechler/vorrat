@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../api/client.dart';
 import '../models/models.dart';
+import 'product_batches_screen.dart';
 import 'product_edit_screen.dart';
 
 class ProductsScreen extends StatefulWidget {
@@ -117,10 +118,27 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   if (product.barcode != null) product.barcode!,
                                 ].join(' · ')),
                                 onTap: () => _edit(product),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.delete_outline),
-                                  tooltip: 'Delete',
-                                  onPressed: () => _delete(product),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.inventory_2_outlined),
+                                      tooltip: 'View stock batches',
+                                      onPressed: () => Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => ProductBatchesScreen(
+                                            productId: product.id,
+                                            productName: product.name,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline),
+                                      tooltip: 'Delete',
+                                      onPressed: () => _delete(product),
+                                    ),
+                                  ],
                                 ),
                               );
                             },
