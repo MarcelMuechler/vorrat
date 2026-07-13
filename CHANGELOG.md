@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.8.0](https://github.com/MarcelMuechler/vorrat/compare/v0.7.0...v0.8.0) (2026-07-13)
+
+
+### Features
+
+* category filtering plus a non-committal OFF prefill ([#64](https://github.com/MarcelMuechler/vorrat/issues/64)) ([f1e57e1](https://github.com/MarcelMuechler/vorrat/commit/f1e57e15ed55c3b83b62d6f0f21f2a242fa42b45))
+* highlight low stock via a per-product threshold ([#65](https://github.com/MarcelMuechler/vorrat/issues/65)) ([818dca2](https://github.com/MarcelMuechler/vorrat/commit/818dca294d87040e56ea4372d8130df54175239b))
+* let scanning a known barcode open/consume/discard existing stock ([#66](https://github.com/MarcelMuechler/vorrat/issues/66)) ([f508b9f](https://github.com/MarcelMuechler/vorrat/commit/f508b9f5df6b81da19dcdfc123da4b8286639b03))
+* make barcode scanning a platform-defaulted setting ([#59](https://github.com/MarcelMuechler/vorrat/issues/59)) ([9e16c79](https://github.com/MarcelMuechler/vorrat/commit/9e16c79dc68be8ef657f80a6e7ae4bd92336d2c2))
+* remove the Brand field ([#62](https://github.com/MarcelMuechler/vorrat/issues/62)) ([dae7949](https://github.com/MarcelMuechler/vorrat/commit/dae7949f74fb6cf17d9a38bf376b055a47b9ee07))
+* warn on likely duplicate barcode-less product names ([#63](https://github.com/MarcelMuechler/vorrat/issues/63)) ([30b6e85](https://github.com/MarcelMuechler/vorrat/commit/30b6e857d9c7d67ee287a795db19def0ded2a7c5))
+
+
+### Bug Fixes
+
+* trim whitespace when storing/matching barcodes ([#61](https://github.com/MarcelMuechler/vorrat/issues/61)) ([955a974](https://github.com/MarcelMuechler/vorrat/commit/955a974c23b135c8f270b52e1c3db1e5be351017))
+
 ## [0.7.0](https://github.com/MarcelMuechler/vorrat/compare/v0.6.0...v0.7.0) (2026-07-13)
 
 
