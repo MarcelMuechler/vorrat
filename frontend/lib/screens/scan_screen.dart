@@ -5,12 +5,20 @@ import 'package:provider/provider.dart';
 
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
+import '../models/models.dart';
 import '../state/scan_history.dart';
 import '../state/scan_queue.dart';
+import '../state/stock_provider.dart';
 import 'pending_scans_screen.dart';
 import 'product_batches_screen.dart';
 import 'product_detail_screen.dart';
 import 'scan_history_screen.dart';
+
+/// What a scan does, chosen up front instead of after the fact (#69) --
+/// scanning repeatedly in Open/Consume/Discard mode acts on each barcode
+/// immediately, similar to how Barcode Buddy's mode-first workflow works.
+/// Add is the default and behaves exactly like before #69.
+enum ScanMode { add, open, consume, discard }
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -49,6 +57,7 @@ bool isPlausibleBarcode(String value, [BarcodeFormat? format]) {
 class _ScanScreenState extends State<ScanScreen> {
   bool _handling = false;
   String? _lastRejected;
+  ScanMode _mode = ScanMode.add;
 
   Future<void> _onDetect(BarcodeCapture capture) async {
     if (_handling) return;
@@ -122,19 +131,23 @@ class _ScanScreenState extends State<ScanScreen> {
       final name = result.localProduct?.name ?? result.prefill?.name;
       if (name != null) await history.add(code, name);
       if (!mounted) return;
-      final existing = result.localProduct;
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          // A barcode that already matches a local product might have stock
-          // on hand to consume/discard/mark opened -- not just more to add
-          // (#56). ProductBatchesScreen covers all of that (plus adding a
-          // new batch via its own FAB) and degrades gracefully to an
-          // add-only empty state if this product currently has none.
-          builder: (_) => existing != null
-              ? ProductBatchesScreen(productId: existing.id, productName: existing.name)
-              : ProductDetailScreen(barcode: code, prefill: result.prefill),
-        ),
-      );
+      if (_mode == ScanMode.add) {
+        final existing = result.localProduct;
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            // A barcode that already matches a local product might have
+            // stock on hand to consume/discard/mark opened -- not just more
+            // to add (#56). ProductBatchesScreen covers all of that (plus
+            // adding a new batch via its own FAB) and degrades gracefully to
+            // an add-only empty state if this product currently has none.
+            builder: (_) => existing != null
+                ? ProductBatchesScreen(productId: existing.id, productName: existing.name)
+                : ProductDetailScreen(barcode: code, prefill: result.prefill),
+          ),
+        );
+      } else {
+        await _actOnScan(api, result);
+      }
     } on http.ClientException catch (_) {
       // A connection-level failure (package:http wraps SocketException into
       // this on IO platforms too, see ClientException docs) -- worth queuing
@@ -152,6 +165,50 @@ class _ScanScreenState extends State<ScanScreen> {
       }
     } finally {
       if (mounted) setState(() => _handling = false);
+    }
+  }
+
+  /// Open/Consume/Discard mode: acts immediately on the soonest-best-before
+  /// batch of a known product (already the API's default order -- see
+  /// ProductBatchesScreen), whole-batch, no prompt (#69's decision). Stays
+  /// on this screen either way, ready for the next scan. If there's nothing
+  /// to act on -- an unknown barcode, or a known product with no stock --
+  /// shows an error and stays in the same mode rather than falling back to
+  /// Add (#69's decision).
+  Future<void> _actOnScan(ApiClient api, BarcodeLookupResult result) async {
+    final l10n = AppLocalizations.of(context)!;
+    final product = result.localProduct;
+    final batches = product != null ? await api.listStock(productId: product.id) : <StockItem>[];
+    if (!mounted) return;
+    if (product == null || batches.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.nothingToActOn)));
+      return;
+    }
+    final batch = batches.first;
+    final stock = context.read<StockProvider>();
+    switch (_mode) {
+      case ScanMode.add:
+        return; // unreachable -- Add is handled entirely by _lookUp
+      case ScanMode.open:
+        await stock.markOpened(batch.id);
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.scannedOpened(product.name))));
+      case ScanMode.consume:
+        await stock.consume(batch.id, batch.amount, reason: 'used');
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.scannedUsed(product.name))));
+      case ScanMode.discard:
+        await stock.consume(batch.id, batch.amount, reason: 'spoiled');
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.scannedDiscarded(product.name))));
     }
   }
 
@@ -183,13 +240,38 @@ class _ScanScreenState extends State<ScanScreen> {
             ),
         ],
       ),
-      body: Stack(
+      body: Column(
         children: [
-          MobileScanner(
-            onDetect: _onDetect,
-            errorBuilder: (context, error) => Center(child: Text(error.errorCode.message)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            // Horizontally scrollable -- four segments with locale-dependent
+            // label lengths (e.g. German "Verbrauchen") can be wider than a
+            // narrow phone screen.
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SegmentedButton<ScanMode>(
+                segments: [
+                  ButtonSegment(value: ScanMode.add, label: Text(l10n.scanModeAdd)),
+                  ButtonSegment(value: ScanMode.open, label: Text(l10n.scanModeOpen)),
+                  ButtonSegment(value: ScanMode.consume, label: Text(l10n.scanModeUse)),
+                  ButtonSegment(value: ScanMode.discard, label: Text(l10n.scanModeDiscard)),
+                ],
+                selected: {_mode},
+                onSelectionChanged: (selected) => setState(() => _mode = selected.first),
+              ),
+            ),
           ),
-          if (_handling) const Center(child: CircularProgressIndicator()),
+          Expanded(
+            child: Stack(
+              children: [
+                MobileScanner(
+                  onDetect: _onDetect,
+                  errorBuilder: (context, error) => Center(child: Text(error.errorCode.message)),
+                ),
+                if (_handling) const Center(child: CircularProgressIndicator()),
+              ],
+            ),
+          ),
         ],
       ),
     );

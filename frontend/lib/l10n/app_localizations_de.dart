@@ -277,6 +277,37 @@ class AppLocalizationsDe extends AppLocalizations {
   String get nothingScannedYet => 'Noch nichts gescannt.';
 
   @override
+  String get scanModeAdd => 'Hinzufügen';
+
+  @override
+  String get scanModeOpen => 'Öffnen';
+
+  @override
+  String get scanModeUse => 'Verbrauchen';
+
+  @override
+  String get scanModeDiscard => 'Verwerfen';
+
+  @override
+  String get nothingToActOn =>
+      'Nichts zu tun -- unbekannter Barcode oder kein Bestand dafür.';
+
+  @override
+  String scannedOpened(String name) {
+    return '\"$name\" als geöffnet markiert.';
+  }
+
+  @override
+  String scannedUsed(String name) {
+    return '\"$name\" verbraucht.';
+  }
+
+  @override
+  String scannedDiscarded(String name) {
+    return '\"$name\" verworfen.';
+  }
+
+  @override
   String get newLocationTitle => 'Neuer Standort';
 
   @override
