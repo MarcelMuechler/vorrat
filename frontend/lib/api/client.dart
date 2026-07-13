@@ -175,6 +175,16 @@ class ApiClient {
     await _postJson('/api/stock/$id/consume', {'amount': amount});
   }
 
+  Future<void> markStockOpened(int id) async {
+    final today = DateTime.now().toIso8601String().split('T').first;
+    final res = await http.patch(
+      _uri('/api/stock/$id'),
+      headers: {'content-type': 'application/json'},
+      body: jsonEncode({'opened_at': today}),
+    );
+    _checkOk(res);
+  }
+
   Future<int> getExpiringSoonDays() async {
     final res = await http.get(_uri('/api/settings'));
     _checkOk(res);

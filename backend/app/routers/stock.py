@@ -18,13 +18,21 @@ from app.utils import escape_like
 router = APIRouter(prefix="/api/stock", tags=["stock"])
 
 
-def _status(best_before_date: date | None, expiring_soon_days: int) -> str:
-    if best_before_date is None:
+def _effective_expiry(
+    best_before_date: date | None, opened_at: date | None, open_shelf_life_days: int | None
+) -> date | None:
+    opened_expiry = opened_at + timedelta(days=open_shelf_life_days) if opened_at and open_shelf_life_days else None
+    candidates = [d for d in (best_before_date, opened_expiry) if d is not None]
+    return min(candidates) if candidates else None
+
+
+def _status(expiry: date | None, expiring_soon_days: int) -> str:
+    if expiry is None:
         return "ok"
     today = date.today()
-    if best_before_date < today:
+    if expiry < today:
         return "expired"
-    if best_before_date <= today + timedelta(days=expiring_soon_days):
+    if expiry <= today + timedelta(days=expiring_soon_days):
         return "expiring_soon"
     return "ok"
 
@@ -66,7 +74,12 @@ def list_stock(
                 product_name=entry.product.name,
                 product_barcode=entry.product.barcode,
                 location_name=entry.location.name if entry.location else None,
-                status=_status(entry.best_before_date, expiring_soon_days),
+                status=_status(
+                    _effective_expiry(
+                        entry.best_before_date, entry.opened_at, entry.product.default_open_shelf_life_days
+                    ),
+                    expiring_soon_days,
+                ),
             )
         )
     return items

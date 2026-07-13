@@ -32,6 +32,7 @@ class ProductCreate(BaseModel):
     quantity_unit: str = "pcs"
     default_location_id: int | None = None
     default_best_before_days: int | None = None
+    default_open_shelf_life_days: int | None = None
 
     _strip_name = field_validator("name", mode="before")(_strip_name)
 
@@ -45,6 +46,7 @@ class ProductUpdate(BaseModel):
     quantity_unit: str | None = None
     default_location_id: int | None = None
     default_best_before_days: int | None = None
+    default_open_shelf_life_days: int | None = None
 
     _strip_name = field_validator("name", mode="before")(_strip_name)
 
@@ -61,6 +63,7 @@ class ProductRead(BaseModel):
     quantity_unit: str
     default_location_id: int | None
     default_best_before_days: int | None
+    default_open_shelf_life_days: int | None
     created_at: datetime
 
 
@@ -77,6 +80,7 @@ class StockEntryUpdate(BaseModel):
     amount: float | None = Field(default=None, gt=0)
     best_before_date: date | None = None
     purchased_date: date | None = None
+    opened_at: date | None = None
 
 
 class StockEntryConsume(BaseModel):
@@ -92,6 +96,7 @@ class StockEntryRead(BaseModel):
     amount: float
     best_before_date: date | None
     purchased_date: date | None
+    opened_at: date | None
     created_at: datetime
     updated_at: datetime
 

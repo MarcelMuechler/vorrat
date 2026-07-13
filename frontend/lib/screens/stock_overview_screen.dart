@@ -243,8 +243,17 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
           _relativeLabel(item.bestBeforeDate!, presentVerb: 'Expires', pastVerb: 'Expired'),
         if (item.purchasedDate != null)
           _relativeLabel(item.purchasedDate!, presentVerb: 'Purchased', pastVerb: 'Purchased'),
+        if (item.openedAt != null)
+          _relativeLabel(item.openedAt!, presentVerb: 'Opened', pastVerb: 'Opened'),
         '${item.amount}',
       ].join(' · ')),
+      trailing: item.openedAt == null
+          ? IconButton(
+              icon: const Icon(Icons.open_in_full),
+              tooltip: 'Mark as opened',
+              onPressed: () => stock.markOpened(item.id),
+            )
+          : null,
       onTap: () => _consumeDialog(context, stock, item),
       onLongPress: () => _confirmDelete(context, stock, item.id, item.productName),
     );

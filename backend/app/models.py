@@ -28,6 +28,7 @@ class Product(Base):
         ForeignKey("locations.id"), nullable=True
     )
     default_best_before_days: Mapped[int | None] = mapped_column(nullable=True)
+    default_open_shelf_life_days: Mapped[int | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     default_location: Mapped[Location | None] = relationship()
@@ -53,6 +54,7 @@ class StockEntry(Base):
     amount: Mapped[float] = mapped_column(Float)
     best_before_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     purchased_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    opened_at: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()

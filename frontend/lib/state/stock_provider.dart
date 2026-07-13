@@ -191,4 +191,9 @@ class StockProvider extends ChangeNotifier {
     await api.consumeStock(id, amount);
     await refresh();
   }
+
+  Future<void> markOpened(int id) async {
+    await api.markStockOpened(id);
+    await refresh();
+  }
 }

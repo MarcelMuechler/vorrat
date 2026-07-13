@@ -18,6 +18,7 @@ class Product {
   final String quantityUnit;
   final int? defaultLocationId;
   final int? defaultBestBeforeDays;
+  final int? defaultOpenShelfLifeDays;
 
   Product({
     required this.id,
@@ -29,6 +30,7 @@ class Product {
     this.quantityUnit = 'pcs',
     this.defaultLocationId,
     this.defaultBestBeforeDays,
+    this.defaultOpenShelfLifeDays,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
@@ -41,6 +43,7 @@ class Product {
         quantityUnit: json['quantity_unit'] ?? 'pcs',
         defaultLocationId: json['default_location_id'],
         defaultBestBeforeDays: json['default_best_before_days'],
+        defaultOpenShelfLifeDays: json['default_open_shelf_life_days'],
       );
 }
 
@@ -83,6 +86,7 @@ class StockItem {
   final double amount;
   final DateTime? bestBeforeDate;
   final DateTime? purchasedDate;
+  final DateTime? openedAt;
   final String productName;
   final String? productBarcode;
   final String? locationName;
@@ -97,6 +101,7 @@ class StockItem {
     this.locationId,
     this.bestBeforeDate,
     this.purchasedDate,
+    this.openedAt,
     this.productBarcode,
     this.locationName,
   });
@@ -112,6 +117,7 @@ class StockItem {
         purchasedDate: json['purchased_date'] != null
             ? DateTime.parse(json['purchased_date'])
             : null,
+        openedAt: json['opened_at'] != null ? DateTime.parse(json['opened_at']) : null,
         productName: json['product_name'],
         productBarcode: json['product_barcode'],
         locationName: json['location_name'],

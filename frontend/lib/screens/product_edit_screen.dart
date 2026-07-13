@@ -19,6 +19,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   late final TextEditingController _categoryController;
   late final TextEditingController _quantityUnitController;
   late final TextEditingController _bestBeforeDaysController;
+  late final TextEditingController _openShelfLifeDaysController;
   List<Location> _locations = [];
   int? _selectedLocationId;
   String? _imageUrl;
@@ -37,6 +38,9 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     _bestBeforeDaysController = TextEditingController(
       text: p.defaultBestBeforeDays == null ? '' : '${p.defaultBestBeforeDays}',
     );
+    _openShelfLifeDaysController = TextEditingController(
+      text: p.defaultOpenShelfLifeDays == null ? '' : '${p.defaultOpenShelfLifeDays}',
+    );
     _selectedLocationId = p.defaultLocationId;
     _imageUrl = p.imageUrl;
     _loadLocations();
@@ -49,6 +53,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     _categoryController.dispose();
     _quantityUnitController.dispose();
     _bestBeforeDaysController.dispose();
+    _openShelfLifeDaysController.dispose();
     super.dispose();
   }
 
@@ -72,6 +77,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
         'quantity_unit': _quantityUnitController.text.isEmpty ? 'pcs' : _quantityUnitController.text,
         'default_location_id': _selectedLocationId,
         'default_best_before_days': int.tryParse(_bestBeforeDaysController.text),
+        'default_open_shelf_life_days': int.tryParse(_openShelfLifeDaysController.text),
         'image_url': _imageUrl,
       });
       if (!mounted) return;
@@ -178,6 +184,16 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Default best-before days',
                     hintText: 'e.g. 7 — prefilled when adding this product to stock',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _openShelfLifeDaysController,
+                  decoration: const InputDecoration(
+                    labelText: 'Use within (days after opening)',
+                    hintText: 'e.g. 3 — for products that spoil faster once opened',
                     border: OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
