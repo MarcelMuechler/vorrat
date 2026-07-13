@@ -67,12 +67,16 @@ class ApiClient {
     return res;
   }
 
-  Future<bool> checkHealth() async {
+  /// Returns the decoded /api/health body (includes "version"), or null if
+  /// the server couldn't be reached — lets callers show which version is
+  /// actually running instead of just a yes/no reachability check.
+  Future<Map<String, dynamic>?> checkHealth() async {
     try {
       final res = await http.get(_uri('/api/health')).timeout(const Duration(seconds: 5));
-      return res.statusCode == 200;
+      if (res.statusCode != 200) return null;
+      return jsonDecode(res.body) as Map<String, dynamic>;
     } catch (_) {
-      return false;
+      return null;
     }
   }
 

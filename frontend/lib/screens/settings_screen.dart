@@ -36,11 +36,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final settings = context.read<SettingsProvider>();
     final api = context.read<ApiClient>();
     await settings.setServerUrl(_controller.text);
-    final ok = await api.checkHealth();
+    final health = await api.checkHealth();
     if (!mounted) return;
     setState(() {
       _testing = false;
-      _testResult = ok ? 'Connected' : 'Could not reach server';
+      _testResult = health != null ? 'Connected — server v${health['version']}' : 'Could not reach server';
     });
   }
 

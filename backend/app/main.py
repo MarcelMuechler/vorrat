@@ -5,9 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
+from app import __version__
 from app.routers import barcode, locations, products, stock
 
-app = FastAPI(title="Vorrat")
+app = FastAPI(title="Vorrat", version=__version__)
+print(f"Vorrat backend v{__version__} starting", flush=True)
 
 # ponytail: allow_origins=["*"] is fine here, v1 has no auth and this only
 # ever runs on a trusted home network / behind HA Ingress.
@@ -27,7 +29,7 @@ app.include_router(barcode.router)
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "version": __version__}
 
 
 # The Flutter web build only exists once the Docker image copies it in (see
