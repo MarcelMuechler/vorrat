@@ -28,6 +28,12 @@ class ApiClient {
   Uri _uri(String path, [Map<String, String>? query]) =>
       Uri.parse('$_baseUrl$path').replace(queryParameters: query);
 
+  Future<http.Response> _postJson(String path, Object body) => http.post(
+        _uri(path),
+        headers: {'content-type': 'application/json'},
+        body: jsonEncode(body),
+      );
+
   Future<bool> checkHealth() async {
     try {
       final res = await http.get(_uri('/api/health')).timeout(const Duration(seconds: 5));
@@ -44,20 +50,12 @@ class ApiClient {
   }
 
   Future<Location> createLocation(String name) async {
-    final res = await http.post(
-      _uri('/api/locations'),
-      headers: {'content-type': 'application/json'},
-      body: jsonEncode({'name': name}),
-    );
+    final res = await _postJson('/api/locations', {'name': name});
     return Location.fromJson(jsonDecode(res.body));
   }
 
   Future<Product> createProduct(Map<String, dynamic> payload) async {
-    final res = await http.post(
-      _uri('/api/products'),
-      headers: {'content-type': 'application/json'},
-      body: jsonEncode(payload),
-    );
+    final res = await _postJson('/api/products', payload);
     return Product.fromJson(jsonDecode(res.body));
   }
 
@@ -72,19 +70,7 @@ class ApiClient {
   }
 
   Future<void> addStock(Map<String, dynamic> payload) async {
-    await http.post(
-      _uri('/api/stock'),
-      headers: {'content-type': 'application/json'},
-      body: jsonEncode(payload),
-    );
-  }
-
-  Future<void> consumeStock(int id, double amount) async {
-    await http.post(
-      _uri('/api/stock/$id/consume'),
-      headers: {'content-type': 'application/json'},
-      body: jsonEncode({'amount': amount}),
-    );
+    await _postJson('/api/stock', payload);
   }
 
   Future<void> deleteStock(int id) async {
