@@ -21,7 +21,6 @@ class CategoryField extends StatefulWidget {
   final int? categoryId;
   final String? categoryName;
   final String label;
-  final String? hintText;
   final ValueChanged<Category?> onChanged;
 
   const CategoryField({
@@ -29,7 +28,6 @@ class CategoryField extends StatefulWidget {
     required this.categoryId,
     required this.categoryName,
     required this.label,
-    this.hintText,
     required this.onChanged,
   });
 
@@ -128,7 +126,6 @@ class CategoryFieldState extends State<CategoryField> {
           focusNode: focusNode,
           decoration: InputDecoration(
             labelText: widget.label,
-            hintText: widget.hintText,
             border: const OutlineInputBorder(),
             suffixIcon: controller.text.isEmpty
                 ? null
