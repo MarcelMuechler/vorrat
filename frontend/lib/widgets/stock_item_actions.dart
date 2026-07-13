@@ -6,8 +6,10 @@ import '../l10n/app_localizations.dart';
 /// tapping reveals Open/Use/Spoil buttons beneath it (Open only shown while
 /// [canOpen]); Use and Spoil each prompt for an amount. Swiping either
 /// direction acts on the whole batch at once, no prompt -- swipe right to
-/// use it all, left to discard it (mirrors #56's scan-triggered shortcut,
-/// which also acts on a whole batch by default).
+/// use it all, left to spoil it all (mirrors #56's scan-triggered shortcut,
+/// which also acts on a whole batch by default; matches the visible
+/// "Spoiled" swipe background rather than opening a delete confirmation).
+/// Deleting outright is still reachable via long-press.
 class StockItemActions extends StatefulWidget {
   final Widget leading;
   final Widget title;
@@ -17,9 +19,9 @@ class StockItemActions extends StatefulWidget {
   final bool canOpen;
   final VoidCallback onOpen;
   final Future<void> Function(double amount, String reason) onConsume;
-  // Returns whether the batch was actually deleted -- e.g. false if a
-  // confirmation dialog was shown and cancelled, so a swipe-triggered
-  // delete can snap back instead of completing.
+  // Long-press only (swipe-left spoils instead of deleting -- see class
+  // doc). Returns whether the batch was actually deleted -- e.g. false if
+  // its confirmation dialog was cancelled.
   final Future<bool> Function() onDelete;
   final Object dismissibleKey;
 
