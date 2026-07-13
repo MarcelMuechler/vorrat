@@ -115,13 +115,18 @@ void main() {
     expect(consumedReason, 'used');
   });
 
-  testWidgets('swiping left deletes the batch, no dialog', (tester) async {
+  testWidgets('swiping left spoils the whole amount, no dialog', (tester) async {
+    double? consumedAmount;
+    String? consumedReason;
     var deleteCalled = false;
     await tester.pumpWidget(
       _wrap(
         canOpen: true,
         onOpen: () {},
-        onConsume: (_, _) async {},
+        onConsume: (amount, reason) async {
+          consumedAmount = amount;
+          consumedReason = reason;
+        },
         onDelete: () async {
           deleteCalled = true;
           return true;
@@ -132,6 +137,11 @@ void main() {
     await tester.drag(find.text('Jam'), const Offset(-500, 0));
     await tester.pumpAndSettle();
 
-    expect(deleteCalled, isTrue);
+    // Matches the visible "Spoiled" swipe background -- same immediate,
+    // no-dialog behavior as swipe-right, just the other reason. Delete
+    // (with its confirmation) stays reachable via long-press only.
+    expect(consumedAmount, 2);
+    expect(consumedReason, 'spoiled');
+    expect(deleteCalled, isFalse);
   });
 }
