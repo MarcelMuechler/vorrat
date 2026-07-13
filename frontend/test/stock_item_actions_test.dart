@@ -6,7 +6,7 @@ import 'package:vorrat/widgets/stock_item_actions.dart';
 Widget _wrap({
   required bool canOpen,
   required VoidCallback onOpen,
-  required Future<void> Function(double, String) onConsume,
+  required Future<bool> Function(double, String) onConsume,
   required Future<bool> Function() onDelete,
 }) =>
     MaterialApp(
@@ -31,7 +31,7 @@ Widget _wrap({
 void main() {
   testWidgets('tapping the tile reveals Open/Use/Spoil, Open omitted once opened', (tester) async {
     await tester.pumpWidget(
-      _wrap(canOpen: false, onOpen: () {}, onConsume: (_, _) async {}, onDelete: () async => true),
+      _wrap(canOpen: false, onOpen: () {}, onConsume: (_, _) async => true, onDelete: () async => true),
     );
 
     expect(find.text('Used'), findsNothing);
@@ -54,6 +54,7 @@ void main() {
         onConsume: (amount, reason) async {
           consumedAmount = amount;
           consumedReason = reason;
+          return true;
         },
         onDelete: () async => true,
       ),
@@ -78,7 +79,10 @@ void main() {
       _wrap(
         canOpen: true,
         onOpen: () {},
-        onConsume: (_, reason) async => consumedReason = reason,
+        onConsume: (_, reason) async {
+          consumedReason = reason;
+          return true;
+        },
         onDelete: () async => true,
       ),
     );
@@ -103,6 +107,7 @@ void main() {
         onConsume: (amount, reason) async {
           consumedAmount = amount;
           consumedReason = reason;
+          return true;
         },
         onDelete: () async => true,
       ),
@@ -126,6 +131,7 @@ void main() {
         onConsume: (amount, reason) async {
           consumedAmount = amount;
           consumedReason = reason;
+          return true;
         },
         onDelete: () async {
           deleteCalled = true;

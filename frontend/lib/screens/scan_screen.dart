@@ -192,7 +192,17 @@ class _ScanScreenState extends State<ScanScreen> {
       case ScanMode.add:
         return; // unreachable -- Add is handled entirely by _lookUp
       case ScanMode.open:
-        await stock.markOpened(batch.id);
+        // Skip batches already opened -- unlike the manual UI's per-batch
+        // "Open" button (only shown while canOpen), acting on batches.first
+        // unconditionally would silently reset an already-set openedAt.
+        final unopened = batches.where((b) => b.openedAt == null);
+        if (unopened.isEmpty) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.nothingToActOn)));
+          return;
+        }
+        await stock.markOpened(unopened.first.id);
         if (!mounted) return;
         ScaffoldMessenger.of(
           context,

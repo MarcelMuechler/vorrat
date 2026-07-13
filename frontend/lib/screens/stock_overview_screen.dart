@@ -97,7 +97,16 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   Future<void> _loadCategories() async {
     try {
       final categories = await context.read<ApiClient>().listCategories();
-      if (mounted) setState(() => _categories = categories);
+      if (!mounted) return;
+      setState(() => _categories = categories);
+      // A category selected as a filter before this screen was last torn
+      // down and rebuilt may have been deleted elsewhere (Settings >
+      // Categories) since -- DropdownButton asserts if its value isn't
+      // among its items, so drop a filter that no longer resolves.
+      final stock = context.read<StockProvider>();
+      if (stock.categoryIdFilter != null && !categories.any((c) => c.id == stock.categoryIdFilter)) {
+        await stock.setCategoryFilter(null);
+      }
     } catch (_) {
       // Filter dropdown just stays hidden, same as _loadLocations above.
     }
@@ -320,6 +329,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
 
   Widget _buildItemTile(BuildContext context, StockProvider stock, StockItem item) {
     return StockItemActions(
+      key: ValueKey(item.id),
       leading: CircleAvatar(backgroundColor: _statusColor(item.status), radius: 6),
       title: Text(item.productName),
       subtitle: Text([
@@ -341,7 +351,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     );
   }
 
-  Future<void> _consume(
+  Future<bool> _consume(
     BuildContext context,
     StockProvider stock,
     StockItem item,
@@ -350,6 +360,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   ) async {
     try {
       await stock.consume(item.id, amount, reason: reason);
+      return true;
     } catch (e) {
       if (context.mounted) {
         final l10n = AppLocalizations.of(context)!;
@@ -357,6 +368,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.couldNotConsume('$e'))));
       }
+      return false;
     }
   }
 

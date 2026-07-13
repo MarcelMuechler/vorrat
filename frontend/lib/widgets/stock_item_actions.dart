@@ -18,7 +18,10 @@ class StockItemActions extends StatefulWidget {
   final String productName;
   final bool canOpen;
   final VoidCallback onOpen;
-  final Future<void> Function(double amount, String reason) onConsume;
+  // Returns whether the consume actually succeeded -- e.g. false on an API
+  // error -- so a swipe-triggered consume can snap back instead of
+  // dismissing a batch that's still there server-side.
+  final Future<bool> Function(double amount, String reason) onConsume;
   // Long-press only (swipe-left spoils instead of deleting -- see class
   // doc). Returns whether the batch was actually deleted -- e.g. false if
   // its confirmation dialog was cancelled.
@@ -96,14 +99,10 @@ class _StockItemActionsState extends State<StockItemActions> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(l10n.spoiledLabel, style: const TextStyle(color: Colors.white)),
           ),
-          confirmDismiss: (direction) async {
-            if (direction == DismissDirection.startToEnd) {
-              await widget.onConsume(widget.amount, 'used');
-              return true;
-            }
-            await widget.onConsume(widget.amount, 'spoiled');
-            return true;
-          },
+          confirmDismiss: (direction) => widget.onConsume(
+            widget.amount,
+            direction == DismissDirection.startToEnd ? 'used' : 'spoiled',
+          ),
           child: ListTile(
             leading: widget.leading,
             title: widget.title,

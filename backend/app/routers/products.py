@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.db import get_db
 from app.models import Product, StockEntry
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/products", tags=["products"])
 
 @router.get("", response_model=list[ProductRead])
 def list_products(search: str | None = None, barcode: str | None = None, db: Session = Depends(get_db)):
-    query = db.query(Product)
+    query = db.query(Product).options(joinedload(Product.category))
     if barcode:
         query = query.filter(Product.barcode == normalize_barcode(barcode))
     if search:

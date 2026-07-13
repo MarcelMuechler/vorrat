@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -9,6 +10,14 @@ from app.schemas import CategoryCreate, CategoryRead, CategoryUpdate
 router = APIRouter(prefix="/api/categories", tags=["categories"])
 
 
+def _find_by_name_ci(db: Session, name: str) -> Category | None:
+    """SQLite's default unique constraint is case-sensitive, but the
+    frontend's autocomplete matches case-insensitively -- without this check
+    two clients (or one with a stale category list) racing "Dairy" and
+    "dairy" would both pass the DB constraint and create duplicates."""
+    return db.query(Category).filter(func.lower(Category.name) == name.lower()).first()
+
+
 @router.get("", response_model=list[CategoryRead])
 def list_categories(db: Session = Depends(get_db)):
     return db.query(Category).order_by(Category.name).all()
@@ -16,6 +25,8 @@ def list_categories(db: Session = Depends(get_db)):
 
 @router.post("", response_model=CategoryRead, status_code=201)
 def create_category(payload: CategoryCreate, db: Session = Depends(get_db)):
+    if _find_by_name_ci(db, payload.name):
+        raise HTTPException(409, "A category with that name already exists")
     category = Category(name=payload.name)
     db.add(category)
     try:
@@ -32,6 +43,9 @@ def update_category(category_id: int, payload: CategoryUpdate, db: Session = Dep
     category = db.get(Category, category_id)
     if not category:
         raise HTTPException(404, "Category not found")
+    existing = _find_by_name_ci(db, payload.name)
+    if existing and existing.id != category_id:
+        raise HTTPException(409, "A category with that name already exists")
     category.name = payload.name
     try:
         db.commit()

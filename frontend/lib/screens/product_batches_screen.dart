@@ -64,18 +64,20 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
     }
   }
 
-  Future<void> _consume(StockItem item, double amount, String reason) async {
+  Future<bool> _consume(StockItem item, double amount, String reason) async {
     final l10n = AppLocalizations.of(context)!;
     try {
       await context.read<ApiClient>().consumeStock(item.id, amount, reason: reason);
       await _refresh();
       if (mounted) await context.read<StockProvider>().refresh();
+      return true;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.couldNotConsume('$e'))));
       }
+      return false;
     }
   }
 
@@ -146,6 +148,7 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
                         itemBuilder: (context, index) {
                           final item = _items[index];
                           return StockItemActions(
+                            key: ValueKey(item.id),
                             leading: CircleAvatar(backgroundColor: _statusColor(item.status), radius: 6),
                             title: Text('${item.amount}'),
                             subtitle: Text([

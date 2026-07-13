@@ -100,9 +100,18 @@ class CategoryFieldState extends State<CategoryField> {
       setState(() => _categories = [..._categories, created]);
       widget.onChanged(created);
       return created;
-    } catch (_) {
-      // Leave the typed text as-is if creation fails (e.g. offline) --
-      // better than silently discarding what the user typed.
+    } catch (e) {
+      // Leave the typed text as-is if creation fails (e.g. offline) -- better
+      // than silently discarding what the user typed. But the caller's save
+      // flow still reads a stale/null category id at this point, so surface
+      // the failure rather than letting the product save with a category
+      // that silently doesn't match what's visibly in the field.
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotAddCategory('$e'))));
+      }
       return null;
     }
   }
