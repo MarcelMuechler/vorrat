@@ -10,14 +10,12 @@
           "jsonpath": "$.project.version"
         },
         {
-          "type": "yaml",
-          "path": "frontend/pubspec.yaml",
-          "jsonpath": "$.version"
+          "type": "generic",
+          "path": "frontend/pubspec.yaml"
         },
         {
-          "type": "yaml",
-          "path": "vorrat/config.yaml",
-          "jsonpath": "$.version"
+          "type": "generic",
+          "path": "vorrat/config.yaml"
         }
       ]
     }
