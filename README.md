@@ -35,6 +35,33 @@ wrapper repo that clones this repo's tagged releases at build time (see "Releasi
 for why it's separate). Install "Vorrat" from the store, start it, and open it from the
 sidebar. See [`vorrat/DOCS.md`](vorrat/DOCS.md) for mobile app setup.
 
+## Building an Android APK
+
+There's no Play Store listing, so installing on a phone means building the APK yourself and
+sideloading it:
+
+```sh
+cd frontend
+flutter build apk --release
+```
+
+This produces `frontend/build/app/outputs/flutter-apk/app-release.apk`. The release build
+is signed with Flutter's debug key (see `frontend/android/app/build.gradle.kts` — there's no
+release signing config), which is fine for installing on your own device but not for
+distributing further or publishing to a store.
+
+To get it onto a phone, either:
+
+- **Via USB**: enable Developer options → USB debugging on the phone, connect it, then
+  `adb install frontend/build/app/outputs/flutter-apk/app-release.apk` (or `flutter install`
+  from `frontend/` with the device connected).
+- **Without USB**: copy the APK to the phone any way you like (cloud storage, a file share,
+  emailing it to yourself) and open it there. Android will prompt to allow installs from
+  that source ("Install unknown apps") the first time — allow it, then continue the install.
+
+Once installed, open the app's Settings tab and set the server URL to point at your backend
+(same as the Home Assistant mobile setup — see [`vorrat/DOCS.md`](vorrat/DOCS.md)).
+
 ## Adding a translation
 
 The app's strings live in `frontend/lib/l10n/app_en.arb` (the template — one key per
