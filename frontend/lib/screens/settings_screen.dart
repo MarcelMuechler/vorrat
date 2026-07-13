@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../api/client.dart';
 import '../main.dart';
@@ -104,6 +106,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 8),
               Text(_testResult!),
             ],
+            if (kIsWeb) ...[
+              const SizedBox(height: 32),
+              const Text(
+                'Pair another device: open Settings → Scan to connect on it, '
+                'then scan this code.',
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: QrImageView(
+                  // Always port 8099, regardless of how this page itself was
+                  // reached — matters when this loads through HA Ingress
+                  // (a dynamic, session-bound proxy path another device can't
+                  // use), where the pairable address is still the add-on's
+                  // own direct LAN port (see vorrat/DOCS.md).
+                  data: '${Uri.base.scheme}://${Uri.base.host}:8099',
+                  size: 220,
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -112,10 +133,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 /// Scans a QR code (or any barcode) and pops with its decoded text, treated
-/// as a server URL by the caller. There's no in-app way yet to generate that
-/// QR code on the server side — see issue #12 — so today this expects one
-/// produced out-of-band (e.g. a label with the server's LAN address encoded
-/// as a URL).
+/// as a server URL by the caller — pairs with the QR code the web UI shows
+/// on itself further up this screen.
 class _QrConnectScanner extends StatefulWidget {
   const _QrConnectScanner();
 
