@@ -92,6 +92,21 @@ class ApiClient {
     return Location.fromJson(jsonDecode(res.body));
   }
 
+  Future<Location> renameLocation(int id, String name) async {
+    final res = await http.patch(
+      _uri('/api/locations/$id'),
+      headers: {'content-type': 'application/json'},
+      body: jsonEncode({'name': name}),
+    );
+    _checkOk(res);
+    return Location.fromJson(jsonDecode(res.body));
+  }
+
+  Future<void> deleteLocation(int id) async {
+    final res = await http.delete(_uri('/api/locations/$id'));
+    _checkOk(res);
+  }
+
   Future<Product> createProduct(Map<String, dynamic> payload) async {
     final res = await _postJson('/api/products', payload);
     return Product.fromJson(jsonDecode(res.body));

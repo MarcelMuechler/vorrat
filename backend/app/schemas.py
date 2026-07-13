@@ -7,6 +7,10 @@ class LocationCreate(BaseModel):
     name: str
 
 
+class LocationUpdate(BaseModel):
+    name: str
+
+
 class LocationRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

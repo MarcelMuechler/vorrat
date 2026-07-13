@@ -7,6 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../api/client.dart';
 import '../main.dart';
 import '../state/settings_provider.dart';
+import 'locations_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -106,6 +107,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 8),
               Text(_testResult!),
             ],
+            const SizedBox(height: 24),
+            const Divider(),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.location_on_outlined),
+              title: const Text('Locations'),
+              subtitle: const Text('Rename or delete storage locations'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const LocationsScreen()),
+              ),
+            ),
             if (kIsWeb) ...[
               const SizedBox(height: 32),
               const Text(

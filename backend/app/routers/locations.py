@@ -3,8 +3,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Location
-from app.schemas import LocationCreate, LocationRead
+from app.models import Location, Product, StockEntry
+from app.schemas import LocationCreate, LocationRead, LocationUpdate
 
 router = APIRouter(prefix="/api/locations", tags=["locations"])
 
@@ -25,3 +25,35 @@ def create_location(payload: LocationCreate, db: Session = Depends(get_db)):
         raise HTTPException(409, "A location with that name already exists")
     db.refresh(location)
     return location
+
+
+@router.patch("/{location_id}", response_model=LocationRead)
+def update_location(location_id: int, payload: LocationUpdate, db: Session = Depends(get_db)):
+    location = db.get(Location, location_id)
+    if not location:
+        raise HTTPException(404, "Location not found")
+    location.name = payload.name
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "A location with that name already exists")
+    db.refresh(location)
+    return location
+
+
+@router.delete("/{location_id}", status_code=204)
+def delete_location(location_id: int, db: Session = Depends(get_db)):
+    location = db.get(Location, location_id)
+    if not location:
+        raise HTTPException(404, "Location not found")
+    has_stock = db.query(StockEntry).filter(StockEntry.location_id == location_id).first()
+    if has_stock:
+        raise HTTPException(409, "Location still has stock entries; move or remove them first")
+    is_default_for_product = (
+        db.query(Product).filter(Product.default_location_id == location_id).first()
+    )
+    if is_default_for_product:
+        raise HTTPException(409, "Location is a product's default location; change that first")
+    db.delete(location)
+    db.commit()
