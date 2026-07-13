@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.7.0](https://github.com/MarcelMuechler/vorrat/compare/v0.6.0...v0.7.0) (2026-07-13)
+
+
+### Features
+
+* add a per-product detail view showing all its batches ([#32](https://github.com/MarcelMuechler/vorrat/issues/32)) ([80eb0c3](https://github.com/MarcelMuechler/vorrat/commit/80eb0c323fab5fd09edf2489083828adc7e6ce8d))
+* add a way to refresh a product's data from Open Food Facts ([#40](https://github.com/MarcelMuechler/vorrat/issues/40)) ([b9a61b5](https://github.com/MarcelMuechler/vorrat/commit/b9a61b5f9da44ca15d47b906e45befa5285bde9d))
+* add an expiry breakdown view ([#34](https://github.com/MarcelMuechler/vorrat/issues/34)) ([4fd3bb7](https://github.com/MarcelMuechler/vorrat/commit/4fd3bb7774a5fd03a693a220ef43a58e3135fc95))
+* add CSV export of current stock ([#51](https://github.com/MarcelMuechler/vorrat/issues/51)) ([339e76f](https://github.com/MarcelMuechler/vorrat/commit/339e76f6476d58ef7f3e721f3d06613e779d16b5))
+* add manual barcode entry as a scan fallback ([#37](https://github.com/MarcelMuechler/vorrat/issues/37)) ([b767b44](https://github.com/MarcelMuechler/vorrat/commit/b767b445828910bb7ec7602d3764d1b171c1a899))
+* add product management (list + edit) to the frontend ([#43](https://github.com/MarcelMuechler/vorrat/issues/43)) ([832bd27](https://github.com/MarcelMuechler/vorrat/commit/832bd2766da11353a4befc8d324361f5e21d4570))
+* add scan history for quick re-scans ([#38](https://github.com/MarcelMuechler/vorrat/issues/38)) ([cf36cbc](https://github.com/MarcelMuechler/vorrat/commit/cf36cbc85d4dd0db4c4d071fe0c85f73f7db3e38))
+* add search and sort controls to the Stock overview ([#30](https://github.com/MarcelMuechler/vorrat/issues/30)) ([fee1798](https://github.com/MarcelMuechler/vorrat/commit/fee1798bf402738a2049244eac25c96eb08a670b))
+* group Stock overview by product with total quantity ([#29](https://github.com/MarcelMuechler/vorrat/issues/29)) ([e98b2e2](https://github.com/MarcelMuechler/vorrat/commit/e98b2e2c396f68f90fedd9302d2b57bf260162c0))
+* make the 'expiring soon' threshold configurable ([#33](https://github.com/MarcelMuechler/vorrat/issues/33)) ([3723395](https://github.com/MarcelMuechler/vorrat/commit/372339549adcbc3f27647c65d487039ffc78bd31))
+* prefill amount/unit from OFF's quantity data ([#42](https://github.com/MarcelMuechler/vorrat/issues/42)) ([c936424](https://github.com/MarcelMuechler/vorrat/commit/c9364247a83bf9521b77e57189939bb94ef87d91))
+* set up Flutter i18n with English and German ([#48](https://github.com/MarcelMuechler/vorrat/issues/48)) ([5956b8c](https://github.com/MarcelMuechler/vorrat/commit/5956b8c821e5052912fe24ede82de8e2c9a56c72))
+* show relative time for best-before and purchase dates ([#53](https://github.com/MarcelMuechler/vorrat/issues/53)) ([e454e0b](https://github.com/MarcelMuechler/vorrat/commit/e454e0b46fad1f1687774db07fd07b0fc65730cb))
+* show the OFF product image and a review hint before saving ([#39](https://github.com/MarcelMuechler/vorrat/issues/39)) ([f994c67](https://github.com/MarcelMuechler/vorrat/commit/f994c67bc1992c3ccb7f5e6d54d0f8bcf7cdeca6))
+* track used vs. spoiled stock, with a simple waste summary ([#52](https://github.com/MarcelMuechler/vorrat/issues/52)) ([73e4891](https://github.com/MarcelMuechler/vorrat/commit/73e4891afbcc6410eff7b4bc0c56b1a53794cb9c))
+* track when a stock entry was opened ([#50](https://github.com/MarcelMuechler/vorrat/issues/50)) ([93b342b](https://github.com/MarcelMuechler/vorrat/commit/93b342baba4f11f403aa8bc38e32fd1d1e3a755c))
+* validate barcode format before running a lookup ([#41](https://github.com/MarcelMuechler/vorrat/issues/41)) ([0d88341](https://github.com/MarcelMuechler/vorrat/commit/0d883418f7ba06c612eaa8a74157e35d90f6de60))
+
+
+### Bug Fixes
+
+* reject empty product names ([#45](https://github.com/MarcelMuechler/vorrat/issues/45)) ([013c32c](https://github.com/MarcelMuechler/vorrat/commit/013c32c0b0ff69b153c2e9afb250a4d143cc5b47))
+* reject non-positive amounts in StockEntryCreate/Update ([#44](https://github.com/MarcelMuechler/vorrat/issues/44)) ([6b929e3](https://github.com/MarcelMuechler/vorrat/commit/6b929e3fd5567b317d2fe0ba5adb3af4db75329a))
+
 ## [0.6.0](https://github.com/MarcelMuechler/vorrat/compare/v0.5.0...v0.6.0) (2026-07-13)
 
 
