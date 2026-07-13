@@ -66,7 +66,41 @@ class _ScanScreenState extends State<ScanScreen> {
       return;
     }
     _lastRejected = null;
+    await _lookUp(code);
+  }
 
+  Future<void> _enterManually() async {
+    final controller = TextEditingController();
+    final code = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Enter barcode'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Look up'),
+          ),
+        ],
+      ),
+    );
+    if (code == null || code.isEmpty || !mounted) return;
+    if (!isPlausibleBarcode(code)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("That doesn't look like a valid barcode.")));
+      return;
+    }
+    await _lookUp(code);
+  }
+
+  Future<void> _lookUp(String code) async {
+    if (_handling) return;
     setState(() => _handling = true);
     final api = context.read<ApiClient>();
     final queue = context.read<ScanQueue>();
@@ -109,6 +143,11 @@ class _ScanScreenState extends State<ScanScreen> {
       appBar: AppBar(
         title: const Text('Scan'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.keyboard),
+            tooltip: 'Enter barcode manually',
+            onPressed: _handling ? null : _enterManually,
+          ),
           if (pendingCount > 0)
             IconButton(
               icon: Badge(label: Text('$pendingCount'), child: const Icon(Icons.pending_actions)),
