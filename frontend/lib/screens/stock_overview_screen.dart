@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../api/client.dart';
 import '../models/models.dart';
 import '../state/stock_provider.dart';
+import 'product_batches_screen.dart';
 import 'product_detail_screen.dart';
 
 Color _statusColor(String status) {
@@ -79,6 +80,11 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
       appBar: AppBar(
         title: const Text('Stock'),
         actions: [
+          IconButton(
+            icon: Icon(stock.grouped ? Icons.view_agenda : Icons.view_list),
+            tooltip: stock.grouped ? 'Show every batch' : 'Group by product',
+            onPressed: stock.toggleGrouped,
+          ),
           PopupMenuButton<StockSort>(
             icon: const Icon(Icons.sort),
             tooltip: 'Sort',
@@ -166,6 +172,31 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     }
     if (stock.items.isEmpty) {
       return const Center(child: Text('No stock yet. Scan something to add it.'));
+    }
+    if (stock.grouped) {
+      final groups = stock.groupedItems;
+      return ListView.separated(
+        itemCount: groups.length,
+        separatorBuilder: (_, _) => const Divider(height: 1),
+        itemBuilder: (context, index) {
+          final group = groups[index];
+          return ListTile(
+            leading: CircleAvatar(backgroundColor: _statusColor(group.status), radius: 6),
+            title: Text(group.productName),
+            subtitle: Text([
+              if (group.locationNames.isNotEmpty) group.locationNames.join(', '),
+              '${group.totalAmount} total',
+            ].join(' · ')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    ProductBatchesScreen(productId: group.productId, productName: group.productName),
+              ),
+            ),
+          );
+        },
+      );
     }
     final items = stock.sortedItems;
     return ListView.separated(
