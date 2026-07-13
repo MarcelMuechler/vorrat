@@ -136,6 +136,15 @@ class ApiClient {
     _checkOk(res);
   }
 
+  /// Re-fetches this product's Open Food Facts listing (bypassing the
+  /// local-DB-first check [lookupBarcode] does) for the caller to review
+  /// and apply via [updateProduct].
+  Future<Map<String, dynamic>> refreshProductFromOff(int id) async {
+    final res = await http.post(_uri('/api/products/$id/refresh-from-off'));
+    _checkOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
   Future<List<StockItem>> listStock({int? locationId, String? search, int? expiringWithinDays}) async {
     final query = <String, String>{};
     if (locationId != null) query['location_id'] = '$locationId';

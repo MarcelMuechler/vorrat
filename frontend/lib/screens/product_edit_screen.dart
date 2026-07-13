@@ -21,8 +21,10 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   late final TextEditingController _bestBeforeDaysController;
   List<Location> _locations = [];
   int? _selectedLocationId;
+  String? _imageUrl;
   bool _loadingLocations = true;
   bool _saving = false;
+  bool _refreshingFromOff = false;
 
   @override
   void initState() {
@@ -36,6 +38,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
       text: p.defaultBestBeforeDays == null ? '' : '${p.defaultBestBeforeDays}',
     );
     _selectedLocationId = p.defaultLocationId;
+    _imageUrl = p.imageUrl;
     _loadLocations();
   }
 
@@ -69,6 +72,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
         'quantity_unit': _quantityUnitController.text.isEmpty ? 'pcs' : _quantityUnitController.text,
         'default_location_id': _selectedLocationId,
         'default_best_before_days': int.tryParse(_bestBeforeDaysController.text),
+        'image_url': _imageUrl,
       });
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -81,15 +85,57 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     }
   }
 
+  Future<void> _refreshFromOff() async {
+    setState(() => _refreshingFromOff = true);
+    final api = context.read<ApiClient>();
+    try {
+      final data = await api.refreshProductFromOff(widget.product.id);
+      if (!mounted) return;
+      setState(() {
+        _nameController.text = data['name'] as String? ?? _nameController.text;
+        _brandController.text = data['brand'] as String? ?? _brandController.text;
+        _categoryController.text = data['category'] as String? ?? _categoryController.text;
+        _imageUrl = data['image_url'] as String? ?? _imageUrl;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Fetched from Open Food Facts — review, then Save.')),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not refresh: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _refreshingFromOff = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit product')),
+      appBar: AppBar(
+        title: const Text('Edit product'),
+        actions: [
+          if (widget.product.barcode != null)
+            IconButton(
+              icon: _refreshingFromOff
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.refresh),
+              tooltip: 'Refresh from Open Food Facts',
+              onPressed: _refreshingFromOff ? null : _refreshFromOff,
+            ),
+        ],
+      ),
       body: _loadingLocations
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                if (_imageUrl != null) ...[
+                  Center(
+                    child: Image.network(_imageUrl!, height: 120, errorBuilder: (_, _, _) => const SizedBox()),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 if (widget.product.barcode != null) ...[
                   Text('Barcode: ${widget.product.barcode}'),
                   const SizedBox(height: 12),

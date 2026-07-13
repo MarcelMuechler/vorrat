@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import Product, StockEntry
+from app.off_client import lookup_off
 from app.schemas import ProductCreate, ProductRead, ProductUpdate
 from app.utils import escape_like
 
@@ -46,6 +47,24 @@ def update_product(product_id: int, payload: ProductUpdate, db: Session = Depend
     db.commit()
     db.refresh(product)
     return product
+
+
+@router.post("/{product_id}/refresh-from-off")
+async def refresh_product_from_off(product_id: int, db: Session = Depends(get_db)):
+    """Re-fetches this product's Open Food Facts listing (bypassing the
+    local-DB-first check /api/barcode/{code} does, which would otherwise just
+    hand back the same stale local record) so the caller can review and
+    apply any changes via the existing PATCH endpoint. Doesn't write
+    anything itself."""
+    product = db.get(Product, product_id)
+    if not product:
+        raise HTTPException(404, "Product not found")
+    if not product.barcode:
+        raise HTTPException(409, "Product has no barcode to look up")
+    off_product = await lookup_off(product.barcode)
+    if not off_product:
+        raise HTTPException(404, "Not found on Open Food Facts")
+    return off_product
 
 
 @router.delete("/{product_id}", status_code=204)
