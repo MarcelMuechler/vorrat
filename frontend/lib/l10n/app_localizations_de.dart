@@ -542,6 +542,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Scan-Tab und Kamera-Scan-Buttons anzeigen';
 
   @override
+  String get offCategorySuggestionsTitle =>
+      'Open-Food-Facts-Kategorievorschläge';
+
+  @override
+  String get offCategorySuggestionsSubtitle =>
+      'Beim Hinzufügen eines gescannten Produkts eine Kategorie vorschlagen';
+
+  @override
   String get scanToConnectTooltip => 'Zum Verbinden scannen';
 
   @override

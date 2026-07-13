@@ -974,6 +974,18 @@ abstract class AppLocalizations {
   /// **'Show the Scan tab and camera scan buttons'**
   String get barcodeScanningSubtitle;
 
+  /// No description provided for @offCategorySuggestionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Food Facts category suggestions'**
+  String get offCategorySuggestionsTitle;
+
+  /// No description provided for @offCategorySuggestionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest a category when adding a product from a scan'**
+  String get offCategorySuggestionsSubtitle;
+
   /// No description provided for @scanToConnectTooltip.
   ///
   /// In en, this message translates to:

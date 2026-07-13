@@ -9,7 +9,7 @@ import 'package:vorrat/state/settings_provider.dart';
 import 'package:vorrat/state/stock_provider.dart';
 
 class FakeApiClient extends ApiClient {
-  FakeApiClient() : super(SettingsProvider());
+  FakeApiClient(super.settings);
   bool createProductCalled = false;
   int? stockedProductId;
 
@@ -41,8 +41,9 @@ class FakeApiClient extends ApiClient {
   }) async => [];
 }
 
-Widget _wrap(ApiClient api) => MultiProvider(
+Widget _wrap(ApiClient api, SettingsProvider settings) => MultiProvider(
       providers: [
+        ChangeNotifierProvider<SettingsProvider>.value(value: settings),
         Provider<ApiClient>.value(value: api),
         ChangeNotifierProvider<StockProvider>(create: (_) => StockProvider(api)),
       ],
@@ -55,8 +56,9 @@ Widget _wrap(ApiClient api) => MultiProvider(
 
 void main() {
   testWidgets('warns when a barcode-less product name matches an existing one', (tester) async {
-    final api = FakeApiClient();
-    await tester.pumpWidget(_wrap(api));
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
+    await tester.pumpWidget(_wrap(api, settings));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, 'homemade jam');
@@ -77,8 +79,9 @@ void main() {
   });
 
   testWidgets('creating new anyway still creates a product', (tester) async {
-    final api = FakeApiClient();
-    await tester.pumpWidget(_wrap(api));
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
+    await tester.pumpWidget(_wrap(api, settings));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, 'homemade jam');

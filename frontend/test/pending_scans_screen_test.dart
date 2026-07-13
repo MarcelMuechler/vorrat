@@ -14,7 +14,7 @@ import 'package:vorrat/state/stock_provider.dart';
 /// without a network -- mirrors what a successful lookup+save looks like
 /// once the server is reachable again.
 class FakeApiClient extends ApiClient {
-  FakeApiClient() : super(SettingsProvider());
+  FakeApiClient(super.settings);
 
   @override
   Future<BarcodeLookupResult> lookupBarcode(String code) async {
@@ -48,7 +48,8 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   testWidgets('syncing a pending scan removes it once the product is saved', (tester) async {
-    final api = FakeApiClient();
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
     final queue = ScanQueue();
     await queue.load();
     await queue.add('4260299353119');
@@ -56,6 +57,7 @@ void main() {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
+          ChangeNotifierProvider<SettingsProvider>.value(value: settings),
           Provider<ApiClient>.value(value: api),
           ChangeNotifierProvider<ScanQueue>.value(value: queue),
           ChangeNotifierProvider<StockProvider>(create: (_) => StockProvider(api)),

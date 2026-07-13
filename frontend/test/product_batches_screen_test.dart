@@ -9,7 +9,7 @@ import 'package:vorrat/state/settings_provider.dart';
 import 'package:vorrat/state/stock_provider.dart';
 
 class FakeApiClient extends ApiClient {
-  FakeApiClient() : super(SettingsProvider());
+  FakeApiClient(super.settings);
   bool opened = false;
   bool addStockCalled = false;
 
@@ -47,10 +47,12 @@ class FakeApiClient extends ApiClient {
 
 void main() {
   testWidgets('marking a batch opened hides the open button', (tester) async {
-    final api = FakeApiClient();
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
     await tester.pumpWidget(
       MultiProvider(
         providers: [
+          ChangeNotifierProvider<SettingsProvider>.value(value: settings),
           Provider<ApiClient>.value(value: api),
           ChangeNotifierProvider<StockProvider>(create: (_) => StockProvider(api)),
         ],
@@ -73,10 +75,12 @@ void main() {
   });
 
   testWidgets('the FAB adds a new batch to the same product', (tester) async {
-    final api = FakeApiClient();
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
     await tester.pumpWidget(
       MultiProvider(
         providers: [
+          ChangeNotifierProvider<SettingsProvider>.value(value: settings),
           Provider<ApiClient>.value(value: api),
           ChangeNotifierProvider<StockProvider>(create: (_) => StockProvider(api)),
         ],

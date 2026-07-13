@@ -209,6 +209,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: settings.scanEnabled,
               onChanged: settings.setScanEnabled,
             ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.category_outlined),
+              title: Text(l10n.offCategorySuggestionsTitle),
+              subtitle: Text(l10n.offCategorySuggestionsSubtitle),
+              value: settings.offCategorySuggestionsEnabled,
+              onChanged: settings.setOffCategorySuggestionsEnabled,
+            ),
             const Divider(),
             ListTile(
               contentPadding: EdgeInsets.zero,

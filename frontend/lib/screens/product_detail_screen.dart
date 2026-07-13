@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
+import '../state/settings_provider.dart';
 import '../state/stock_provider.dart';
 import '../widgets/category_field.dart';
 import '../widgets/quantity_unit_field.dart';
@@ -32,6 +33,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _saving = false;
 
   String? get _imageUrl => widget.existingProduct?.imageUrl ?? widget.prefill?.imageUrl;
+
+  /// OFF's suggested category, unless the setting to suggest one is off
+  /// (#71) -- gates both the hint shown while adding and the "leave it
+  /// blank to accept the suggestion" fallback on save.
+  String? get _offCategorySuggestion => context.read<SettingsProvider>().offCategorySuggestionsEnabled
+      ? widget.prefill?.category
+      : null;
 
   @override
   void initState() {
@@ -132,7 +140,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Future<int?> _resolveCategoryId() async {
     await _categoryFieldKey.currentState?.resolve();
     if (_categoryId != null) return _categoryId;
-    final suggested = widget.prefill?.category?.trim();
+    final suggested = _offCategorySuggestion?.trim();
     if (suggested == null || suggested.isEmpty || !mounted) return null;
     final api = context.read<ApiClient>();
     final existing = await api.listCategories();
@@ -252,8 +260,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     label: l10n.categoryLabel,
                     // OFF's suggestion shows as a hint rather than being
                     // filled in outright -- leaving the field blank uses
-                    // it, typing anything overrides it (#57).
-                    hintText: widget.prefill?.category,
+                    // it, typing anything overrides it (#57). Suppressed
+                    // entirely if the setting to suggest one is off (#71).
+                    hintText: _offCategorySuggestion,
                     onChanged: (category) => setState(() => _categoryId = category?.id),
                   ),
                   const SizedBox(height: 12),
