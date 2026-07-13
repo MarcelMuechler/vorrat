@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, contains_eager, joinedload
 
 from app.config import settings
 from app.db import get_db
@@ -36,7 +36,14 @@ def list_stock(
     expiring_within_days: int | None = None,
     db: Session = Depends(get_db),
 ):
-    query = db.query(StockEntry).join(Product)
+    # join(Product) is already needed for filtering; contains_eager reuses
+    # that same join to populate entry.product instead of lazy-loading it
+    # per row. joinedload(location) avoids the same N+1 for the nullable side.
+    query = (
+        db.query(StockEntry)
+        .join(Product)
+        .options(contains_eager(StockEntry.product), joinedload(StockEntry.location))
+    )
     if location_id is not None:
         query = query.filter(StockEntry.location_id == location_id)
     if search:
