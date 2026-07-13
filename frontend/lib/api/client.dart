@@ -25,8 +25,19 @@ class ApiClient {
   // explicit LAN/localhost URL configured once in Settings.
   String get _baseUrl => settings.serverUrl;
 
-  Uri _uri(String path, [Map<String, String>? query]) =>
-      Uri.parse('$_baseUrl$path').replace(queryParameters: query);
+  Uri _uri(String path, [Map<String, String>? query]) {
+    // path is written as '/api/...' at call sites for readability, but the
+    // leading slash must be dropped when there's no explicit baseUrl: a
+    // root-relative reference ("/api/...") resolves against the origin root
+    // and ignores <base href>'s path, which breaks HA Ingress (served under
+    // a dynamic per-session path prefix). A base-relative reference
+    // ("api/...", no leading slash) resolves against <base href> correctly
+    // in every mode: standalone, Ingress, and native/local-dev (explicit
+    // baseUrl, joined with a slash below).
+    final relativePath = path.startsWith('/') ? path.substring(1) : path;
+    final full = _baseUrl.isEmpty ? relativePath : '$_baseUrl/$relativePath';
+    return Uri.parse(full).replace(queryParameters: query);
+  }
 
   Future<http.Response> _postJson(String path, Object body) => http.post(
         _uri(path),

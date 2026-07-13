@@ -15,7 +15,7 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> setServerUrl(String url) async {
-    _serverUrl = url.trim();
+    _serverUrl = url.trim().replaceFirst(RegExp(r'/+$'), '');
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_serverUrlKey, _serverUrl);
     notifyListeners();
