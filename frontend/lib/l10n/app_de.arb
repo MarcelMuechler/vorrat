@@ -160,6 +160,8 @@
   "serverUrlLabel": "Server-URL",
   "barcodeScanningTitle": "Barcode-Scannen",
   "barcodeScanningSubtitle": "Scan-Tab und Kamera-Scan-Buttons anzeigen",
+  "offCategorySuggestionsTitle": "Open-Food-Facts-Kategorievorschläge",
+  "offCategorySuggestionsSubtitle": "Beim Hinzufügen eines gescannten Produkts eine Kategorie vorschlagen",
   "scanToConnectTooltip": "Zum Verbinden scannen",
   "saveTestConnectionButton": "Speichern & Verbindung testen",
   "expiringSoonDescription": "„Bald ablaufend\" gilt für Artikel, die innerhalb dieser Anzahl von Tagen fällig sind.",

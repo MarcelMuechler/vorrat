@@ -9,17 +9,19 @@ import 'package:vorrat/state/settings_provider.dart';
 import 'package:vorrat/state/stock_provider.dart';
 
 class FakeApiClient extends ApiClient {
-  FakeApiClient() : super(SettingsProvider());
+  FakeApiClient(super.settings);
   @override
   Future<List<Location>> listLocations() async => [];
 }
 
 void main() {
   testWidgets('shows OFF hint and image when prefilled', (tester) async {
-    final api = FakeApiClient();
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
     await tester.pumpWidget(
       MultiProvider(
         providers: [
+          ChangeNotifierProvider<SettingsProvider>.value(value: settings),
           Provider<ApiClient>.value(value: api),
           ChangeNotifierProvider<StockProvider>(create: (_) => StockProvider(api)),
         ],

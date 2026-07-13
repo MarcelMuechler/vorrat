@@ -280,6 +280,8 @@
   "serverUrlLabel": "Server URL",
   "barcodeScanningTitle": "Barcode scanning",
   "barcodeScanningSubtitle": "Show the Scan tab and camera scan buttons",
+  "offCategorySuggestionsTitle": "Open Food Facts category suggestions",
+  "offCategorySuggestionsSubtitle": "Suggest a category when adding a product from a scan",
   "scanToConnectTooltip": "Scan to connect",
   "saveTestConnectionButton": "Save & test connection",
   "expiringSoonDescription": "\"Expiring soon\" applies to items due within this many days.",

@@ -538,6 +538,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show the Scan tab and camera scan buttons';
 
   @override
+  String get offCategorySuggestionsTitle =>
+      'Open Food Facts category suggestions';
+
+  @override
+  String get offCategorySuggestionsSubtitle =>
+      'Suggest a category when adding a product from a scan';
+
+  @override
   String get scanToConnectTooltip => 'Scan to connect';
 
   @override
