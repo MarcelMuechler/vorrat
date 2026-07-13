@@ -185,6 +185,18 @@ class ApiClient {
     _checkOk(res);
   }
 
+  /// The stock CSV export is downloaded by opening this URL directly
+  /// (server sets Content-Disposition) rather than fetched and saved here --
+  /// no cross-platform file-save API is otherwise in this app's dependencies.
+  /// Unlike the relative URIs [_uri] returns for plain http calls (which
+  /// `package:http` resolves against the page location on web), url_launcher
+  /// requires an absolute URI with a scheme, so resolve against Uri.base
+  /// when there's no explicit server URL configured.
+  Uri exportStockCsvUrl() {
+    final uri = _uri('/api/stock/export.csv');
+    return uri.hasScheme ? uri : Uri.base.resolveUri(uri);
+  }
+
   Future<int> getExpiringSoonDays() async {
     final res = await http.get(_uri('/api/settings'));
     _checkOk(res);

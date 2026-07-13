@@ -1,6 +1,9 @@
+import csv
+import io
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, contains_eager, joinedload
 
 from app.db import get_db
@@ -37,14 +40,13 @@ def _status(expiry: date | None, expiring_soon_days: int) -> str:
     return "ok"
 
 
-@router.get("", response_model=list[StockOverviewItem])
-def list_stock(
+def _query_stock(
+    db: Session,
     location_id: int | None = None,
     product_id: int | None = None,
     search: str | None = None,
     expiring_within_days: int | None = None,
-    db: Session = Depends(get_db),
-):
+) -> list[StockOverviewItem]:
     # join(Product) is already needed for filtering; contains_eager reuses
     # that same join to populate entry.product instead of lazy-loading it
     # per row. joinedload(location) avoids the same N+1 for the nullable side.
@@ -83,6 +85,42 @@ def list_stock(
             )
         )
     return items
+
+
+@router.get("", response_model=list[StockOverviewItem])
+def list_stock(
+    location_id: int | None = None,
+    product_id: int | None = None,
+    search: str | None = None,
+    expiring_within_days: int | None = None,
+    db: Session = Depends(get_db),
+):
+    return _query_stock(db, location_id, product_id, search, expiring_within_days)
+
+
+@router.get("/export.csv")
+def export_stock_csv(db: Session = Depends(get_db)):
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(
+        ["product_name", "barcode", "location", "amount", "best_before_date", "status"]
+    )
+    for item in _query_stock(db):
+        writer.writerow(
+            [
+                item.product_name,
+                item.product_barcode or "",
+                item.location_name or "",
+                item.amount,
+                item.best_before_date or "",
+                item.status,
+            ]
+        )
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=stock.csv"},
+    )
 
 
 @router.post("", response_model=StockEntryRead, status_code=201)

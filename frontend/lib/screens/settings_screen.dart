@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../api/client.dart';
+import '../util/open_url.dart';
 import '../main.dart';
 import '../state/settings_provider.dart';
 import '../state/stock_provider.dart';
@@ -83,6 +84,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _testing = false;
       _testResult = health != null ? 'Connected — server v${health['version']}' : 'Could not reach server';
     });
+  }
+
+  Future<void> _exportStockCsv() async {
+    final url = context.read<ApiClient>().exportStockCsvUrl();
+    try {
+      await openInBrowser(url.toString());
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not export: $e')));
+      }
+    }
   }
 
   Future<void> _scanToConnect() async {
@@ -186,6 +198,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ProductsScreen()),
               ),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.file_download_outlined),
+              title: const Text('Export stock (CSV)'),
+              subtitle: const Text('Download current stock as a spreadsheet'),
+              onTap: _exportStockCsv,
             ),
             if (kIsWeb) ...[
               const SizedBox(height: 32),
