@@ -35,6 +35,24 @@ wrapper repo that clones this repo's tagged releases at build time (see "Releasi
 for why it's separate). Install "Vorrat" from the store, start it, and open it from the
 sidebar. See [`vorrat/DOCS.md`](vorrat/DOCS.md) for mobile app setup.
 
+## Adding a translation
+
+The app's strings live in `frontend/lib/l10n/app_en.arb` (the template — one key per
+string) with translations alongside it as `app_<locale>.arb` (e.g. `app_de.arb` for German).
+To add another language:
+
+1. Copy `frontend/lib/l10n/app_en.arb` to `frontend/lib/l10n/app_<locale>.arb` (e.g.
+   `app_fr.arb` for French), and change its `"@@locale"` value to match.
+2. Translate every value, keeping the keys (and `{placeholder}` tokens) unchanged.
+3. Run `flutter pub get` in `frontend/` (or just build/test — `generate: true` in
+   `pubspec.yaml` regenerates `AppLocalizations` automatically) to confirm it compiles.
+
+That's it — `MaterialApp.supportedLocales` is generated from whatever `app_*.arb` files
+exist, so a new locale is picked up automatically; there's no separate list to edit.
+CI runs `frontend/scripts/check_arb_completeness.py`, which fails the build if a
+translation file is missing any key present in `app_en.arb`, so an incomplete translation
+gets caught at PR time instead of silently falling back to English (or crashing) at runtime.
+
 ## Commit message convention
 
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/):

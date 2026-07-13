@@ -20,6 +20,8 @@ jobs:
         run: flutter analyze
       - working-directory: frontend
         run: flutter test
+      - working-directory: frontend
+        run: python3 scripts/check_arb_completeness.py
 
   backend:
     runs-on: ubuntu-latest
