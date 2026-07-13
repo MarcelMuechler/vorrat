@@ -52,6 +52,8 @@ class ProductPrefill {
   final String? brand;
   final String? imageUrl;
   final String? category;
+  final double? amount;
+  final String? quantityUnit;
 
   ProductPrefill({
     required this.barcode,
@@ -59,6 +61,8 @@ class ProductPrefill {
     this.brand,
     this.imageUrl,
     this.category,
+    this.amount,
+    this.quantityUnit,
   });
 
   factory ProductPrefill.fromJson(Map<String, dynamic> json) => ProductPrefill(
@@ -67,6 +71,8 @@ class ProductPrefill {
         brand: json['brand'],
         imageUrl: json['image_url'],
         category: json['category'],
+        amount: (json['amount'] as num?)?.toDouble(),
+        quantityUnit: json['quantity_unit'],
       );
 }
 

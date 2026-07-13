@@ -34,10 +34,20 @@ async def lookup_off(barcode: str) -> dict | None:
     category = (off_product.get("categories") or "").split(",")[0].strip() or None
     image_url = off_product.get("image_front_small_url") or off_product.get("image_url")
 
+    # OFF already normalizes the free-text "quantity" field (e.g. "33 cl")
+    # into a numeric product_quantity + unit when its data is populated --
+    # no need to parse the free-text version ourselves. Both are frequently
+    # missing/empty for a given product, hence the permissive fallback to
+    # omitting them entirely rather than guessing.
+    amount = off_product.get("product_quantity")
+    quantity_unit = off_product.get("product_quantity_unit") or None
+
     return {
         "barcode": barcode,
         "name": name,
         "brand": brand,
         "category": category,
         "image_url": image_url,
+        "amount": float(amount) if amount else None,
+        "quantity_unit": quantity_unit,
     }

@@ -20,6 +20,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _brandController;
   late final TextEditingController _amountController;
+  late final TextEditingController _quantityUnitController;
   List<Location> _locations = [];
   int? _selectedLocationId;
   DateTime? _bestBeforeDate;
@@ -37,7 +38,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     _brandController = TextEditingController(
       text: widget.existingProduct?.brand ?? widget.prefill?.brand ?? '',
     );
-    _amountController = TextEditingController(text: '1');
+    _amountController = TextEditingController(
+      text: widget.prefill?.amount != null ? '${widget.prefill!.amount}' : '1',
+    );
+    _quantityUnitController = TextEditingController(
+      text: widget.existingProduct?.quantityUnit ?? widget.prefill?.quantityUnit ?? 'pcs',
+    );
     _selectedLocationId = widget.existingProduct?.defaultLocationId;
     final defaultDays = widget.existingProduct?.defaultBestBeforeDays;
     if (defaultDays != null) {
@@ -113,6 +119,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           'brand': _brandController.text.isEmpty ? null : _brandController.text,
           'image_url': widget.prefill?.imageUrl,
           'category': widget.prefill?.category,
+          'quantity_unit': _quantityUnitController.text.isEmpty ? 'pcs' : _quantityUnitController.text,
         });
         productId = created.id;
       }
@@ -187,10 +194,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: _amountController,
-                  decoration: const InputDecoration(labelText: 'Amount', border: OutlineInputBorder()),
-                  keyboardType: TextInputType.number,
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _amountController,
+                        decoration: const InputDecoration(labelText: 'Amount', border: OutlineInputBorder()),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                    // The unit belongs to the Product, not this stock entry --
+                    // only settable at first creation. Editing it afterwards
+                    // is ProductEditScreen's job (#43).
+                    if (widget.existingProduct == null) ...[
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _quantityUnitController,
+                          decoration: const InputDecoration(labelText: 'Unit', border: OutlineInputBorder()),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 12),
                 ListTile(
