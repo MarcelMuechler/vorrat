@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/MarcelMuechler/vorrat/compare/v0.4.0...v0.5.0) (2026-07-13)
+
+
+### Features
+
+* auto-sync vorrat-hassio-addon on release ([#19](https://github.com/MarcelMuechler/vorrat/issues/19)) ([70198a4](https://github.com/MarcelMuechler/vorrat/commit/70198a4b28d51e18025f89607f0e74c9f33ffd37))
+
 ## [0.4.0](https://github.com/MarcelMuechler/vorrat/compare/v0.3.0...v0.4.0) (2026-07-13)
 
 
