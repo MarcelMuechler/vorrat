@@ -59,14 +59,14 @@ class ProductRead(BaseModel):
 class StockEntryCreate(BaseModel):
     product_id: int
     location_id: int | None = None
-    amount: float
+    amount: float = Field(gt=0)
     best_before_date: date | None = None
     purchased_date: date | None = None
 
 
 class StockEntryUpdate(BaseModel):
     location_id: int | None = None
-    amount: float | None = None
+    amount: float | None = Field(default=None, gt=0)
     best_before_date: date | None = None
     purchased_date: date | None = None
 
