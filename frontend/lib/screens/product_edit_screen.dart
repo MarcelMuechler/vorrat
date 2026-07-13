@@ -20,6 +20,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   late final TextEditingController _quantityUnitController;
   late final TextEditingController _bestBeforeDaysController;
   late final TextEditingController _openShelfLifeDaysController;
+  late final TextEditingController _lowStockThresholdController;
   List<Location> _locations = [];
   int? _selectedLocationId;
   String? _imageUrl;
@@ -40,6 +41,9 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     _openShelfLifeDaysController = TextEditingController(
       text: p.defaultOpenShelfLifeDays == null ? '' : '${p.defaultOpenShelfLifeDays}',
     );
+    _lowStockThresholdController = TextEditingController(
+      text: p.lowStockThreshold == null ? '' : '${p.lowStockThreshold}',
+    );
     _selectedLocationId = p.defaultLocationId;
     _imageUrl = p.imageUrl;
     _loadLocations();
@@ -52,6 +56,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     _quantityUnitController.dispose();
     _bestBeforeDaysController.dispose();
     _openShelfLifeDaysController.dispose();
+    _lowStockThresholdController.dispose();
     super.dispose();
   }
 
@@ -75,6 +80,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
         'default_location_id': _selectedLocationId,
         'default_best_before_days': int.tryParse(_bestBeforeDaysController.text),
         'default_open_shelf_life_days': int.tryParse(_openShelfLifeDaysController.text),
+        'low_stock_threshold': double.tryParse(_lowStockThresholdController.text),
         'image_url': _imageUrl,
       });
       if (!mounted) return;
@@ -196,6 +202,16 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                     border: const OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _lowStockThresholdController,
+                  decoration: InputDecoration(
+                    labelText: l10n.lowStockThresholdLabel,
+                    hintText: l10n.lowStockThresholdHint,
+                    border: const OutlineInputBorder(),
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 ),
                 const SizedBox(height: 24),
                 FilledButton(

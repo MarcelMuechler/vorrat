@@ -18,6 +18,7 @@ class Product {
   final int? defaultLocationId;
   final int? defaultBestBeforeDays;
   final int? defaultOpenShelfLifeDays;
+  final double? lowStockThreshold;
 
   Product({
     required this.id,
@@ -29,6 +30,7 @@ class Product {
     this.defaultLocationId,
     this.defaultBestBeforeDays,
     this.defaultOpenShelfLifeDays,
+    this.lowStockThreshold,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
@@ -41,6 +43,7 @@ class Product {
         defaultLocationId: json['default_location_id'],
         defaultBestBeforeDays: json['default_best_before_days'],
         defaultOpenShelfLifeDays: json['default_open_shelf_life_days'],
+        lowStockThreshold: (json['low_stock_threshold'] as num?)?.toDouble(),
       );
 }
 
@@ -84,6 +87,7 @@ class StockItem {
   final String productName;
   final String? productBarcode;
   final String? category;
+  final double? lowStockThreshold;
   final String? locationName;
   final String status; // ok | expiring_soon | expired
 
@@ -99,6 +103,7 @@ class StockItem {
     this.openedAt,
     this.productBarcode,
     this.category,
+    this.lowStockThreshold,
     this.locationName,
   });
 
@@ -117,6 +122,7 @@ class StockItem {
         productName: json['product_name'],
         productBarcode: json['product_barcode'],
         category: json['product_category'],
+        lowStockThreshold: (json['product_low_stock_threshold'] as num?)?.toDouble(),
         locationName: json['location_name'],
         status: json['status'],
       );

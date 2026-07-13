@@ -311,6 +311,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'e.g. 3 — for products that spoil faster once opened';
 
   @override
+  String get lowStockThresholdLabel => 'Low stock threshold';
+
+  @override
+  String get lowStockThresholdHint =>
+      'e.g. 0.2 — flag the Stock tab when total on hand drops to this or below';
+
+  @override
+  String get lowStockChip => 'Low stock';
+
+  @override
   String get deleteProductTitle => 'Delete product?';
 
   @override

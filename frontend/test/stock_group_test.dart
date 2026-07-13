@@ -10,6 +10,7 @@ StockItem _item({
   required double amount,
   required String status,
   String? location,
+  double? lowStockThreshold,
 }) => StockItem(
   id: amount.hashCode ^ productId,
   productId: productId,
@@ -17,6 +18,7 @@ StockItem _item({
   productName: name,
   locationName: location,
   status: status,
+  lowStockThreshold: lowStockThreshold,
 );
 
 void main() {
@@ -37,5 +39,20 @@ void main() {
     expect(groups[2]!.totalAmount, 3);
     expect(groups[2]!.status, 'ok');
     expect(groups[2]!.locationNames, isEmpty);
+  });
+
+  test('isLowStock flags a product at or below its threshold, ignores products with none set', () {
+    final provider = StockProvider(ApiClient(SettingsProvider()));
+    provider.items = [
+      _item(productId: 1, name: 'Flour', amount: 0.2, status: 'ok', lowStockThreshold: 0.5),
+      _item(productId: 2, name: 'Milk', amount: 5, status: 'ok', lowStockThreshold: 1),
+      _item(productId: 3, name: 'Bread', amount: 1, status: 'ok'),
+    ];
+
+    final groups = {for (final g in provider.groupedItems) g.productId: g};
+
+    expect(groups[1]!.isLowStock, isTrue);
+    expect(groups[2]!.isLowStock, isFalse);
+    expect(groups[3]!.isLowStock, isFalse);
   });
 }

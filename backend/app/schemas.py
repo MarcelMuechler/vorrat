@@ -35,6 +35,7 @@ class ProductCreate(BaseModel):
     default_location_id: int | None = None
     default_best_before_days: int | None = None
     default_open_shelf_life_days: int | None = None
+    low_stock_threshold: float | None = Field(default=None, gt=0)
 
     _strip_name = field_validator("name", mode="before")(_strip_name)
     _normalize_barcode = field_validator("barcode", mode="before")(normalize_barcode)
@@ -49,6 +50,7 @@ class ProductUpdate(BaseModel):
     default_location_id: int | None = None
     default_best_before_days: int | None = None
     default_open_shelf_life_days: int | None = None
+    low_stock_threshold: float | None = Field(default=None, gt=0)
 
     _strip_name = field_validator("name", mode="before")(_strip_name)
     _normalize_barcode = field_validator("barcode", mode="before")(normalize_barcode)
@@ -66,6 +68,7 @@ class ProductRead(BaseModel):
     default_location_id: int | None
     default_best_before_days: int | None
     default_open_shelf_life_days: int | None
+    low_stock_threshold: float | None
     created_at: datetime
 
 
@@ -108,6 +111,7 @@ class StockOverviewItem(StockEntryRead):
     product_name: str
     product_barcode: str | None
     product_category: str | None
+    product_low_stock_threshold: float | None
     location_name: str | None
     status: str
 

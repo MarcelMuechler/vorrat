@@ -79,6 +79,7 @@ def _query_stock(
                 product_name=entry.product.name,
                 product_barcode=entry.product.barcode,
                 product_category=entry.product.category,
+                product_low_stock_threshold=entry.product.low_stock_threshold,
                 location_name=entry.location.name if entry.location else None,
                 status=_status(
                     _effective_expiry(

@@ -313,6 +313,16 @@ class AppLocalizationsDe extends AppLocalizations {
       'z. B. 3 — für Produkte, die nach dem Öffnen schneller verderben';
 
   @override
+  String get lowStockThresholdLabel => 'Mindestbestand';
+
+  @override
+  String get lowStockThresholdHint =>
+      'z. B. 0,2 — markiert im Bestand, wenn die Gesamtmenge darauf oder darunter fällt';
+
+  @override
+  String get lowStockChip => 'Bestand niedrig';
+
+  @override
   String get deleteProductTitle => 'Produkt löschen?';
 
   @override
