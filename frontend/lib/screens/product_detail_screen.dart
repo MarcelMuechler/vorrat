@@ -6,11 +6,11 @@ import '../models/models.dart';
 import '../state/stock_provider.dart';
 
 class ProductDetailScreen extends StatefulWidget {
-  final String barcode;
+  final String? barcode;
   final Product? existingProduct;
   final ProductPrefill? prefill;
 
-  const ProductDetailScreen({super.key, required this.barcode, this.existingProduct, this.prefill});
+  const ProductDetailScreen({super.key, this.barcode, this.existingProduct, this.prefill});
 
   @override
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
@@ -142,8 +142,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Text('Barcode: ${widget.barcode}'),
-                const SizedBox(height: 12),
+                if (widget.barcode != null) ...[
+                  Text('Barcode: ${widget.barcode}'),
+                  const SizedBox(height: 12),
+                ],
                 TextField(
                   controller: _nameController,
                   decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()),

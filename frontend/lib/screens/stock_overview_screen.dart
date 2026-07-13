@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../state/stock_provider.dart';
+import 'product_detail_screen.dart';
 
 Color _statusColor(String status) {
   switch (status) {
@@ -57,6 +58,13 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Add product manually',
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ProductDetailScreen()),
+        ),
+        child: const Icon(Icons.add),
       ),
     );
   }
