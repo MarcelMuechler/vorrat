@@ -62,3 +62,19 @@ class StockEntry(Base):
 
     product: Mapped[Product] = relationship()
     location: Mapped[Location | None] = relationship()
+
+
+class ConsumptionLog(Base):
+    """Append-only record of stock leaving via consume/delete, kept after the
+    StockEntry itself is gone -- just enough to answer "how much did I waste"
+    without a full transaction ledger (every purchase/transfer/correction)."""
+
+    __tablename__ = "consumption_log"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    amount: Mapped[float] = mapped_column(Float)
+    reason: Mapped[str] = mapped_column(String)  # "used" | "spoiled"
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    product: Mapped[Product] = relationship()

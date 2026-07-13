@@ -25,6 +25,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _testResult;
   bool _testing = false;
   bool _savingExpiringSoon = false;
+  int? _wastedThisMonth;
 
   @override
   void initState() {
@@ -32,6 +33,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _controller = TextEditingController(text: context.read<SettingsProvider>().serverUrl);
     _expiringSoonController = TextEditingController(text: '${context.read<StockProvider>().expiringSoonDays}');
     _loadExpiringSoonDays();
+    _loadWasteSummary();
+  }
+
+  Future<void> _loadWasteSummary() async {
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    try {
+      final entries = await context.read<ApiClient>().listConsumptionLog(
+        since: startOfMonth,
+        reason: 'spoiled',
+      );
+      if (mounted) setState(() => _wastedThisMonth = entries.length);
+    } catch (_) {
+      // Silent -- this is a small supplementary stat, not worth its own
+      // error state on top of the rest of the screen's.
+    }
   }
 
   Future<void> _loadExpiringSoonDays() async {
@@ -206,6 +223,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: const Text('Download current stock as a spreadsheet'),
               onTap: _exportStockCsv,
             ),
+            if (_wastedThisMonth != null) ...[
+              const Divider(),
+              Text(
+                _wastedThisMonth == 0
+                    ? 'Nothing marked spoiled this month.'
+                    : '$_wastedThisMonth batch${_wastedThisMonth == 1 ? '' : 'es'} marked spoiled this month.',
+              ),
+            ],
             if (kIsWeb) ...[
               const SizedBox(height: 32),
               const Text(

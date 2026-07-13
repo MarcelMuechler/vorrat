@@ -171,8 +171,20 @@ class ApiClient {
     _checkOk(res);
   }
 
-  Future<void> consumeStock(int id, double amount) async {
-    await _postJson('/api/stock/$id/consume', {'amount': amount});
+  Future<void> consumeStock(int id, double amount, {String reason = 'used'}) async {
+    await _postJson('/api/stock/$id/consume', {'amount': amount, 'reason': reason});
+  }
+
+  /// Batches removed via [consumeStock] or [deleteStock] since [since] (if
+  /// given), most-recent-first -- used for the "N wasted this month" summary.
+  Future<List<ConsumptionLogEntry>> listConsumptionLog({DateTime? since, String? reason}) async {
+    final query = <String, String>{};
+    if (since != null) query['since'] = since.toIso8601String().split('T').first;
+    if (reason != null) query['reason'] = reason;
+    final res = await http.get(_uri('/api/consumption-log', query));
+    _checkOk(res);
+    final list = jsonDecode(res.body) as List;
+    return list.map((e) => ConsumptionLogEntry.fromJson(e)).toList();
   }
 
   Future<void> markStockOpened(int id) async {

@@ -187,8 +187,8 @@ class StockProvider extends ChangeNotifier {
     await refresh();
   }
 
-  Future<void> consume(int id, double amount) async {
-    await api.consumeStock(id, amount);
+  Future<void> consume(int id, double amount, {String reason = 'used'}) async {
+    await api.consumeStock(id, amount, reason: reason);
     await refresh();
   }
 

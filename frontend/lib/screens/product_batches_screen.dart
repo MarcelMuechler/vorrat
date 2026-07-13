@@ -57,28 +57,45 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
 
   Future<void> _consumeDialog(StockItem item) async {
     final controller = TextEditingController(text: '1');
+    var reason = 'used';
     final amount = await showDialog<double>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Use some of "${widget.productName}"'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(labelText: 'Amount (of ${item.amount} in stock)'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, double.tryParse(controller.text)),
-            child: const Text('Consume'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('Use some of "${widget.productName}"'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                autofocus: true,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: 'Amount (of ${item.amount} in stock)'),
+              ),
+              const SizedBox(height: 12),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: 'used', label: Text('Used')),
+                  ButtonSegment(value: 'spoiled', label: Text('Spoiled')),
+                ],
+                selected: {reason},
+                onSelectionChanged: (value) => setState(() => reason = value.first),
+              ),
+            ],
           ),
-        ],
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, double.tryParse(controller.text)),
+              child: const Text('Consume'),
+            ),
+          ],
+        ),
       ),
     );
     if (amount == null || amount <= 0 || !mounted) return;
     try {
-      await context.read<ApiClient>().consumeStock(item.id, amount);
+      await context.read<ApiClient>().consumeStock(item.id, amount, reason: reason);
       await _refresh();
       if (mounted) await context.read<StockProvider>().refresh();
     } catch (e) {

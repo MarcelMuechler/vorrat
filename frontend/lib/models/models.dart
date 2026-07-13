@@ -124,3 +124,30 @@ class StockItem {
         status: json['status'],
       );
 }
+
+class ConsumptionLogEntry {
+  final int id;
+  final int productId;
+  final String productName;
+  final double amount;
+  final String reason; // used | spoiled
+  final DateTime createdAt;
+
+  ConsumptionLogEntry({
+    required this.id,
+    required this.productId,
+    required this.productName,
+    required this.amount,
+    required this.reason,
+    required this.createdAt,
+  });
+
+  factory ConsumptionLogEntry.fromJson(Map<String, dynamic> json) => ConsumptionLogEntry(
+        id: json['id'],
+        productId: json['product_id'],
+        productName: json['product_name'],
+        amount: (json['amount'] as num).toDouble(),
+        reason: json['reason'],
+        createdAt: DateTime.parse(json['created_at']),
+      );
+}

@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -85,6 +86,7 @@ class StockEntryUpdate(BaseModel):
 
 class StockEntryConsume(BaseModel):
     amount: float = Field(gt=0)
+    reason: Literal["used", "spoiled"] = "used"
 
 
 class StockEntryRead(BaseModel):
@@ -106,6 +108,20 @@ class StockOverviewItem(StockEntryRead):
     product_barcode: str | None
     location_name: str | None
     status: str
+
+
+class ConsumptionLogRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    product_id: int
+    amount: float
+    reason: str
+    created_at: datetime
+
+
+class ConsumptionLogItem(ConsumptionLogRead):
+    product_name: str
 
 
 class AppSettingsRead(BaseModel):

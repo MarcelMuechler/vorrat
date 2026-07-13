@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, contains_eager, joinedload
 
 from app.db import get_db
-from app.models import Location, Product, StockEntry
+from app.models import ConsumptionLog, Location, Product, StockEntry
 from app.routers.settings import get_app_settings
 from app.schemas import (
     StockEntryConsume,
@@ -154,6 +154,9 @@ def consume_stock(entry_id: int, payload: StockEntryConsume, db: Session = Depen
     if not entry:
         raise HTTPException(404, "Stock entry not found")
     entry.amount -= payload.amount
+    db.add(
+        ConsumptionLog(product_id=entry.product_id, amount=payload.amount, reason=payload.reason)
+    )
     if entry.amount <= 0:
         db.delete(entry)
         db.commit()
@@ -168,5 +171,8 @@ def delete_stock(entry_id: int, db: Session = Depends(get_db)):
     entry = db.get(StockEntry, entry_id)
     if not entry:
         raise HTTPException(404, "Stock entry not found")
+    # Removed without going through consume -- there's no "used" amount to
+    # attribute, so this counts as spoiled/discarded for the waste summary.
+    db.add(ConsumptionLog(product_id=entry.product_id, amount=entry.amount, reason="spoiled"))
     db.delete(entry)
     db.commit()
