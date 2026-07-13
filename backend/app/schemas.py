@@ -6,6 +6,10 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.utils import normalize_barcode
 
 
+def _strip_name(v: str | None) -> str | None:
+    return v.strip() if isinstance(v, str) else v
+
+
 class LocationCreate(BaseModel):
     name: str
 
@@ -23,11 +27,15 @@ class LocationRead(BaseModel):
 
 
 class CategoryCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1)
+
+    _strip_name = field_validator("name", mode="before")(_strip_name)
 
 
 class CategoryUpdate(BaseModel):
-    name: str
+    name: str = Field(min_length=1)
+
+    _strip_name = field_validator("name", mode="before")(_strip_name)
 
 
 class CategoryRead(BaseModel):
@@ -36,10 +44,6 @@ class CategoryRead(BaseModel):
     id: int
     name: str
     created_at: datetime
-
-
-def _strip_name(v: str | None) -> str | None:
-    return v.strip() if isinstance(v, str) else v
 
 
 class ProductCreate(BaseModel):
