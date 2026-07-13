@@ -42,8 +42,7 @@ Commit messages follow [Conventional Commits](https://www.conventionalcommits.or
 `feat: add partial stock consumption to the overview screen`. This repo's history already
 follows this — see `git log` — so it's a matter of keeping it up, not a new habit.
 
-The type determines the version bump once #21 automates this (until then, it's still the
-mental model behind the manual bump in "Releasing" below):
+The type determines the version bump, via [release-please](https://github.com/googleapis/release-please) (`.github/workflows/release-please.yml`):
 
 - `fix:` → patch
 - `feat:` → minor
@@ -52,22 +51,24 @@ mental model behind the manual bump in "Releasing" below):
 
 ## Releasing
 
-The Home Assistant add-on store only rechecks a repository's `config.yaml` for a new
-`version` string — it never looks at this repo directly, and it never re-runs a Docker
-build on its own. Cutting a release means touching both repos:
+release-please watches `main` and keeps a standing "Release PR" up to date, bumping
+`backend/pyproject.toml`, `frontend/pubspec.yaml`, `vorrat/config.yaml`, and `CHANGELOG.md`
+to whatever version the commits since the last release call for (see "Commit message
+convention" above). Nothing is tagged or released until you merge that PR — review it like
+any other PR, then merge:
 
-1. In this repo, bump the version to the same value in all three places and push to `main`:
-   - `backend/pyproject.toml` (`version`)
-   - `frontend/pubspec.yaml` (`version`)
-   - `vorrat/config.yaml` (`version`)
-2. Tag the release and push the tag: `git tag vX.Y.Z && git push origin vX.Y.Z`.
-3. In [`vorrat-hassio-addon`](https://github.com/MarcelMuechler/vorrat-hassio-addon), bump
-   `vorrat/config.yaml`'s `version` to match, and bump the `ARG VORRAT_REF` default in
+1. Merge the open "chore(main): release X.Y.Z" PR. This tags `vX.Y.Z` and cuts a GitHub
+   Release.
+2. The Home Assistant add-on store only rechecks a repository's `config.yaml` for a new
+   `version` string — it never looks at this repo directly, and it never re-runs a Docker
+   build on its own. So in [`vorrat-hassio-addon`](https://github.com/MarcelMuechler/vorrat-hassio-addon),
+   bump `vorrat/config.yaml`'s `version` to match, and bump the `ARG VORRAT_REF` default in
    `vorrat/Dockerfile` to the new tag. Commit and push.
    - `VORRAT_REF` must point at a tag, never `main` — Docker caches the `RUN git clone`
      layer by its literal command text, so a floating branch ref cache-hits forever and
      rebuilds silently keep serving whatever was cloned on the very first build.
-4. In Home Assistant: Settings → Add-ons → Add-on Store → ⋮ → **Check for updates** (a
+   - (Tracked in #19: automate this step too.)
+3. In Home Assistant: Settings → Add-ons → Add-on Store → ⋮ → **Check for updates** (a
    plain reinstall/rebuild does *not* refresh the store's cached repo metadata), then
    update the Vorrat add-on.
 

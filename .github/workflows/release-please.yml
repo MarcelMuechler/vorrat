@@ -1,0 +1,26 @@
+name: release-please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      # Uses the default GITHUB_TOKEN, which keeps this working with zero setup.
+      # Trade-off: pushes/tags made with GITHUB_TOKEN don't trigger *other*
+      # workflows (a GitHub Actions restriction) -- so the tag this creates
+      # won't auto-fire a future "sync vorrat-hassio-addon" workflow (#19).
+      # If/when #19 needs that, switch `token:` to a PAT stored as a repo
+      # secret instead.
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
