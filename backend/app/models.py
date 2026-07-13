@@ -28,6 +28,10 @@ class Product(Base):
     )
     default_best_before_days: Mapped[int | None] = mapped_column(nullable=True)
     default_open_shelf_life_days: Mapped[int | None] = mapped_column(nullable=True)
+    # No sensible instance-wide default -- "low" is entirely product-specific
+    # (0.2kg of flour vs. 1 jar of jam mean very different things). Null means
+    # the low-stock feature is simply off for that product.
+    low_stock_threshold: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     default_location: Mapped[Location | None] = relationship()

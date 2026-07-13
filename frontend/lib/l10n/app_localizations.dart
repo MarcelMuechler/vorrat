@@ -614,6 +614,24 @@ abstract class AppLocalizations {
   /// **'e.g. 3 — for products that spoil faster once opened'**
   String get openShelfLifeHint;
 
+  /// No description provided for @lowStockThresholdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Low stock threshold'**
+  String get lowStockThresholdLabel;
+
+  /// No description provided for @lowStockThresholdHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 0.2 — flag the Stock tab when total on hand drops to this or below'**
+  String get lowStockThresholdHint;
+
+  /// No description provided for @lowStockChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Low stock'**
+  String get lowStockChip;
+
   /// No description provided for @deleteProductTitle.
   ///
   /// In en, this message translates to:

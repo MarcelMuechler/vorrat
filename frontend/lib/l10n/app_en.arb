@@ -154,6 +154,9 @@
   "defaultBestBeforeDaysHint": "e.g. 7 — prefilled when adding this product to stock",
   "openShelfLifeLabel": "Use within (days after opening)",
   "openShelfLifeHint": "e.g. 3 — for products that spoil faster once opened",
+  "lowStockThresholdLabel": "Low stock threshold",
+  "lowStockThresholdHint": "e.g. 0.2 — flag the Stock tab when total on hand drops to this or below",
+  "lowStockChip": "Low stock",
 
   "deleteProductTitle": "Delete product?",
   "deleteProductConfirm": "This deletes \"{name}\". Products still in stock can't be deleted.",

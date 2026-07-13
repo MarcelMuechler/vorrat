@@ -94,6 +94,9 @@
   "defaultBestBeforeDaysHint": "z. B. 7 — wird beim Hinzufügen zum Bestand vorausgefüllt",
   "openShelfLifeLabel": "Verbrauchen innerhalb (Tage nach dem Öffnen)",
   "openShelfLifeHint": "z. B. 3 — für Produkte, die nach dem Öffnen schneller verderben",
+  "lowStockThresholdLabel": "Mindestbestand",
+  "lowStockThresholdHint": "z. B. 0,2 — markiert im Bestand, wenn die Gesamtmenge darauf oder darunter fällt",
+  "lowStockChip": "Bestand niedrig",
 
   "deleteProductTitle": "Produkt löschen?",
   "deleteProductConfirm": "Dies löscht \"{name}\". Produkte, die noch im Bestand sind, können nicht gelöscht werden.",

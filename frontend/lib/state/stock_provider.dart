@@ -25,6 +25,7 @@ class ProductGroup {
   final double totalAmount;
   final String status;
   final Set<String> locationNames;
+  final double? lowStockThreshold;
 
   ProductGroup({
     required this.productId,
@@ -32,7 +33,10 @@ class ProductGroup {
     required this.totalAmount,
     required this.status,
     required this.locationNames,
+    this.lowStockThreshold,
   });
+
+  bool get isLowStock => lowStockThreshold != null && totalAmount <= lowStockThreshold!;
 }
 
 const _statusSeverity = {'expired': 0, 'expiring_soon': 1, 'ok': 2};
@@ -93,6 +97,7 @@ class StockProvider extends ChangeNotifier {
         totalAmount: batches.fold(0, (sum, b) => sum + b.amount),
         status: worstStatus,
         locationNames: {for (final b in batches) if (b.locationName != null) b.locationName!},
+        lowStockThreshold: batches.first.lowStockThreshold,
       );
     }).toList();
   }

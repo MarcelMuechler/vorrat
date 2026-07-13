@@ -281,7 +281,19 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
         if (group.locationNames.isNotEmpty) group.locationNames.join(', '),
         l10n.groupTotalAmount('${group.totalAmount}'),
       ].join(' · ')),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (group.isLowStock) ...[
+            Tooltip(
+              message: l10n.lowStockChip,
+              child: const Icon(Icons.production_quantity_limits, color: Colors.orange, size: 20),
+            ),
+            const SizedBox(width: 4),
+          ],
+          const Icon(Icons.chevron_right),
+        ],
+      ),
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => ProductBatchesScreen(productId: group.productId, productName: group.productName),
