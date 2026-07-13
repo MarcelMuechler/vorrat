@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class LocationCreate(BaseModel):
@@ -19,9 +19,13 @@ class LocationRead(BaseModel):
     created_at: datetime
 
 
+def _strip_name(v: str | None) -> str | None:
+    return v.strip() if isinstance(v, str) else v
+
+
 class ProductCreate(BaseModel):
     barcode: str | None = None
-    name: str
+    name: str = Field(min_length=1)
     brand: str | None = None
     image_url: str | None = None
     category: str | None = None
@@ -29,16 +33,20 @@ class ProductCreate(BaseModel):
     default_location_id: int | None = None
     default_best_before_days: int | None = None
 
+    _strip_name = field_validator("name", mode="before")(_strip_name)
+
 
 class ProductUpdate(BaseModel):
     barcode: str | None = None
-    name: str | None = None
+    name: str | None = Field(default=None, min_length=1)
     brand: str | None = None
     image_url: str | None = None
     category: str | None = None
     quantity_unit: str | None = None
     default_location_id: int | None = None
     default_best_before_days: int | None = None
+
+    _strip_name = field_validator("name", mode="before")(_strip_name)
 
 
 class ProductRead(BaseModel):
