@@ -218,6 +218,54 @@ abstract class AppLocalizations {
   /// **'Quantity unit'**
   String get quantityUnitLabel;
 
+  /// No description provided for @unitPcsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'pcs'**
+  String get unitPcsLabel;
+
+  /// No description provided for @unitGramsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'g'**
+  String get unitGramsLabel;
+
+  /// No description provided for @unitKilogramsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'kg'**
+  String get unitKilogramsLabel;
+
+  /// No description provided for @unitMillilitersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ml'**
+  String get unitMillilitersLabel;
+
+  /// No description provided for @unitLitersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'l'**
+  String get unitLitersLabel;
+
+  /// No description provided for @unitPackLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'pack'**
+  String get unitPackLabel;
+
+  /// No description provided for @unitOtherLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Other…'**
+  String get unitOtherLabel;
+
+  /// No description provided for @unitCustomLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom unit'**
+  String get unitCustomLabel;
+
   /// No description provided for @locationLabel.
   ///
   /// In en, this message translates to:

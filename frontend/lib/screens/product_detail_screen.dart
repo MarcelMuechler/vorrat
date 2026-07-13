@@ -5,6 +5,7 @@ import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../state/stock_provider.dart';
+import '../widgets/quantity_unit_field.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String? barcode;
@@ -21,7 +22,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _categoryController;
   late final TextEditingController _amountController;
-  late final TextEditingController _quantityUnitController;
+  late String _quantityUnit;
   List<Location> _locations = [];
   int? _selectedLocationId;
   DateTime? _bestBeforeDate;
@@ -40,9 +41,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     _amountController = TextEditingController(
       text: widget.prefill?.amount != null ? '${widget.prefill!.amount}' : '1',
     );
-    _quantityUnitController = TextEditingController(
-      text: widget.existingProduct?.quantityUnit ?? widget.prefill?.quantityUnit ?? 'pcs',
-    );
+    _quantityUnit = widget.existingProduct?.quantityUnit ?? widget.prefill?.quantityUnit ?? 'pcs';
     _selectedLocationId = widget.existingProduct?.defaultLocationId;
     final defaultDays = widget.existingProduct?.defaultBestBeforeDays;
     if (defaultDays != null) {
@@ -170,7 +169,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             'category': _categoryController.text.trim().isEmpty
                 ? widget.prefill?.category
                 : _categoryController.text.trim(),
-            'quantity_unit': _quantityUnitController.text.isEmpty ? 'pcs' : _quantityUnitController.text,
+            'quantity_unit': _quantityUnit.isEmpty ? 'pcs' : _quantityUnit,
           });
           productId = created.id;
         }
@@ -276,12 +275,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     if (widget.existingProduct == null) ...[
                       const SizedBox(width: 12),
                       Expanded(
-                        child: TextField(
-                          controller: _quantityUnitController,
-                          decoration: InputDecoration(
-                            labelText: l10n.unitLabel,
-                            border: const OutlineInputBorder(),
-                          ),
+                        child: QuantityUnitField(
+                          value: _quantityUnit,
+                          label: l10n.unitLabel,
+                          onChanged: (value) => setState(() => _quantityUnit = value),
                         ),
                       ),
                     ],

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
+import '../widgets/quantity_unit_field.dart';
 
 class ProductEditScreen extends StatefulWidget {
   final Product product;
@@ -17,7 +18,7 @@ class ProductEditScreen extends StatefulWidget {
 class _ProductEditScreenState extends State<ProductEditScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _categoryController;
-  late final TextEditingController _quantityUnitController;
+  late String _quantityUnit;
   late final TextEditingController _bestBeforeDaysController;
   late final TextEditingController _openShelfLifeDaysController;
   late final TextEditingController _lowStockThresholdController;
@@ -34,7 +35,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     final p = widget.product;
     _nameController = TextEditingController(text: p.name);
     _categoryController = TextEditingController(text: p.category ?? '');
-    _quantityUnitController = TextEditingController(text: p.quantityUnit);
+    _quantityUnit = p.quantityUnit;
     _bestBeforeDaysController = TextEditingController(
       text: p.defaultBestBeforeDays == null ? '' : '${p.defaultBestBeforeDays}',
     );
@@ -53,7 +54,6 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   void dispose() {
     _nameController.dispose();
     _categoryController.dispose();
-    _quantityUnitController.dispose();
     _bestBeforeDaysController.dispose();
     _openShelfLifeDaysController.dispose();
     _lowStockThresholdController.dispose();
@@ -76,7 +76,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
       await api.updateProduct(widget.product.id, {
         'name': _nameController.text,
         'category': _categoryController.text.isEmpty ? null : _categoryController.text,
-        'quantity_unit': _quantityUnitController.text.isEmpty ? 'pcs' : _quantityUnitController.text,
+        'quantity_unit': _quantityUnit.isEmpty ? 'pcs' : _quantityUnit,
         'default_location_id': _selectedLocationId,
         'default_best_before_days': int.tryParse(_bestBeforeDaysController.text),
         'default_open_shelf_life_days': int.tryParse(_openShelfLifeDaysController.text),
@@ -163,12 +163,10 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   decoration: InputDecoration(labelText: l10n.categoryLabel, border: const OutlineInputBorder()),
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: _quantityUnitController,
-                  decoration: InputDecoration(
-                    labelText: l10n.quantityUnitLabel,
-                    border: const OutlineInputBorder(),
-                  ),
+                QuantityUnitField(
+                  value: _quantityUnit,
+                  label: l10n.quantityUnitLabel,
+                  onChanged: (value) => setState(() => _quantityUnit = value),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<int>(
