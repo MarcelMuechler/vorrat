@@ -37,7 +37,9 @@ class _ScanScreenState extends State<ScanScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lookup failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lookup failed: $e\n\nCheck the server URL in Settings.')),
+        );
       }
     } finally {
       if (mounted) setState(() => _handling = false);
