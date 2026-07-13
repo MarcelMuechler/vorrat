@@ -130,25 +130,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return null;
   }
 
-  /// If the user picked/typed a category, use it -- force-resolving the
-  /// field's current text first (rather than trusting whatever onChanged
-  /// last reported), since tapping Save right after typing a brand-new
-  /// category would otherwise race the field's own async create-category
-  /// call. Otherwise fall back to OFF's suggested category name (#57's
-  /// "leave it blank to accept the suggestion" contract) -- resolved against
-  /// existing categories, or created if it doesn't match one yet (#72/#73).
+  /// Force-resolves the category field's current text (rather than trusting
+  /// whatever onChanged last reported) -- tapping Save right after typing a
+  /// brand-new category would otherwise race the field's own async
+  /// create-category call. The OFF suggestion is already sitting in the
+  /// field as real, editable text by the time this runs (#70), and an
+  /// empty field (the user cleared it) correctly resolves to no category --
+  /// no separate "accept the suggestion" fallback needed.
   Future<int?> _resolveCategoryId() async {
     await _categoryFieldKey.currentState?.resolve();
-    if (_categoryId != null) return _categoryId;
-    final suggested = _offCategorySuggestion?.trim();
-    if (suggested == null || suggested.isEmpty || !mounted) return null;
-    final api = context.read<ApiClient>();
-    final existing = await api.listCategories();
-    for (final c in existing) {
-      if (c.name.trim().toLowerCase() == suggested.toLowerCase()) return c.id;
-    }
-    final created = await api.createCategory(suggested);
-    return created.id;
+    return _categoryId;
   }
 
   Future<bool> _confirmUseExisting(Product existing) async {
@@ -256,13 +247,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   CategoryField(
                     key: _categoryFieldKey,
                     categoryId: _categoryId,
-                    categoryName: null,
-                    label: l10n.categoryLabel,
-                    // OFF's suggestion shows as a hint rather than being
-                    // filled in outright -- leaving the field blank uses
-                    // it, typing anything overrides it (#57). Suppressed
+                    // OFF's suggestion is prefilled as real, editable text
+                    // (not just a hint) -- the field's own clear button
+                    // removes it in one tap if unwanted (#70). Suppressed
                     // entirely if the setting to suggest one is off (#71).
-                    hintText: _offCategorySuggestion,
+                    categoryName: _offCategorySuggestion,
+                    label: l10n.categoryLabel,
                     onChanged: (category) => setState(() => _categoryId = category?.id),
                   ),
                   const SizedBox(height: 12),
