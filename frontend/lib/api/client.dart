@@ -13,6 +13,24 @@ class BarcodeLookupResult {
   BarcodeLookupResult({required this.source, this.localProduct, this.prefill});
 }
 
+/// Thrown for any non-2xx response so callers' try/catch actually sees
+/// backend errors instead of silently treating them as success.
+class ApiException implements Exception {
+  final int statusCode;
+  final String body;
+
+  ApiException(this.statusCode, this.body);
+
+  @override
+  String toString() => 'Request failed ($statusCode): $body';
+}
+
+void _checkOk(http.Response res) {
+  if (res.statusCode < 200 || res.statusCode >= 300) {
+    throw ApiException(res.statusCode, res.body);
+  }
+}
+
 class ApiClient {
   final SettingsProvider settings;
 
@@ -39,11 +57,15 @@ class ApiClient {
     return Uri.parse(full).replace(queryParameters: query);
   }
 
-  Future<http.Response> _postJson(String path, Object body) => http.post(
-        _uri(path),
-        headers: {'content-type': 'application/json'},
-        body: jsonEncode(body),
-      );
+  Future<http.Response> _postJson(String path, Object body) async {
+    final res = await http.post(
+      _uri(path),
+      headers: {'content-type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    _checkOk(res);
+    return res;
+  }
 
   Future<bool> checkHealth() async {
     try {
@@ -56,6 +78,7 @@ class ApiClient {
 
   Future<List<Location>> listLocations() async {
     final res = await http.get(_uri('/api/locations'));
+    _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => Location.fromJson(e)).toList();
   }
@@ -76,6 +99,7 @@ class ApiClient {
     if (search != null && search.isNotEmpty) query['search'] = search;
     if (expiringWithinDays != null) query['expiring_within_days'] = '$expiringWithinDays';
     final res = await http.get(_uri('/api/stock', query));
+    _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => StockItem.fromJson(e)).toList();
   }
@@ -85,7 +109,8 @@ class ApiClient {
   }
 
   Future<void> deleteStock(int id) async {
-    await http.delete(_uri('/api/stock/$id'));
+    final res = await http.delete(_uri('/api/stock/$id'));
+    _checkOk(res);
   }
 
   Future<BarcodeLookupResult> lookupBarcode(String code) async {
@@ -93,6 +118,7 @@ class ApiClient {
     if (res.statusCode == 404) {
       return BarcodeLookupResult(source: 'none');
     }
+    _checkOk(res);
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     final source = body['source'] as String;
     if (source == 'local') {
