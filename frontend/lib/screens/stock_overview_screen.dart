@@ -42,6 +42,7 @@ class StockOverviewScreen extends StatefulWidget {
 
 class _StockOverviewScreenState extends State<StockOverviewScreen> {
   List<Location> _locations = [];
+  final _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -52,6 +53,12 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
         ..refresh();
     });
     _loadLocations();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadLocations() async {
@@ -69,11 +76,40 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     final stock = context.watch<StockProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Stock')),
+      appBar: AppBar(
+        title: const Text('Stock'),
+        actions: [
+          PopupMenuButton<StockSort>(
+            icon: const Icon(Icons.sort),
+            tooltip: 'Sort',
+            initialValue: stock.sort,
+            onSelected: stock.setSort,
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: StockSort.bestBeforeDate, child: Text('Best-before date')),
+              PopupMenuItem(value: StockSort.name, child: Text('Name')),
+              PopupMenuItem(value: StockSort.amount, child: Text('Amount')),
+              PopupMenuItem(value: StockSort.location, child: Text('Location')),
+            ],
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                labelText: 'Search',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              onSubmitted: (value) => stock.setSearchFilter(value),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
               children: [
                 FilterChip(
@@ -131,11 +167,12 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     if (stock.items.isEmpty) {
       return const Center(child: Text('No stock yet. Scan something to add it.'));
     }
+    final items = stock.sortedItems;
     return ListView.separated(
-      itemCount: stock.items.length,
+      itemCount: items.length,
       separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, index) {
-        final item = stock.items[index];
+        final item = items[index];
         return ListTile(
           leading: CircleAvatar(backgroundColor: _statusColor(item.status), radius: 6),
           title: Text(item.productName),
