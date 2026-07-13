@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Flutter / Dart
+frontend/.dart_tool/
+frontend/.flutter-plugin-dependencies
+frontend/build/
+frontend/android/.gradle/
+frontend/android/local.properties
+frontend/ios/Pods/
+frontend/ios/.symlinks/
+frontend/ios/Flutter/Flutter.podspec
+frontend/.packages
+
+# General
+.DS_Store
+data/

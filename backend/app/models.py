@@ -1,0 +1,51 @@
+from datetime import date, datetime
+
+from sqlalchemy import Date, DateTime, Float, ForeignKey, String, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db import Base
+
+
+class Location(Base):
+    __tablename__ = "locations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class Product(Base):
+    __tablename__ = "products"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    barcode: Mapped[str | None] = mapped_column(String, unique=True, nullable=True)
+    name: Mapped[str] = mapped_column(String)
+    brand: Mapped[str | None] = mapped_column(String, nullable=True)
+    image_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    category: Mapped[str | None] = mapped_column(String, nullable=True)
+    quantity_unit: Mapped[str] = mapped_column(String, default="pcs")
+    default_location_id: Mapped[int | None] = mapped_column(
+        ForeignKey("locations.id"), nullable=True
+    )
+    default_best_before_days: Mapped[int | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    default_location: Mapped[Location | None] = relationship()
+
+
+class StockEntry(Base):
+    __tablename__ = "stock_entries"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    location_id: Mapped[int | None] = mapped_column(ForeignKey("locations.id"), nullable=True)
+    amount: Mapped[float] = mapped_column(Float)
+    best_before_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    purchased_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+    product: Mapped[Product] = relationship()
+    location: Mapped[Location | None] = relationship()

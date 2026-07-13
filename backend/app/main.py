@@ -1,0 +1,51 @@
+from pathlib import Path
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+
+from app.routers import barcode, locations, products, stock
+
+app = FastAPI(title="Vorrat")
+
+# ponytail: allow_origins=["*"] is fine here, v1 has no auth and this only
+# ever runs on a trusted home network / behind HA Ingress.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+app.include_router(locations.router)
+app.include_router(products.router)
+app.include_router(stock.router)
+app.include_router(barcode.router)
+
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok"}
+
+
+# The Flutter web build only exists once the Docker image copies it in (see
+# vorrat/Dockerfile) — plain local backend dev runs API-only.
+STATIC_DIR = Path(__file__).parent / "static"
+
+if STATIC_DIR.exists():
+
+    @app.get("/", include_in_schema=False)
+    def index(request: Request):
+        # Flutter Web bakes <base href="/"> into index.html at build time, but
+        # HA Ingress serves this app under a dynamic per-session path prefix
+        # and sets X-Ingress-Path on proxied requests. The app keeps Flutter's
+        # default hash-based routing, so this rewrite on the initial document
+        # load is the only place ingress-awareness is needed.
+        ingress_path = request.headers.get("X-Ingress-Path", "")
+        html = (STATIC_DIR / "index.html").read_text()
+        html = html.replace('<base href="/">', f'<base href="{ingress_path}/">')
+        return HTMLResponse(html)
+
+    app.mount("/", StaticFiles(directory=STATIC_DIR), name="static")

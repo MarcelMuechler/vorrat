@@ -1,0 +1,114 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../state/stock_provider.dart';
+
+Color _statusColor(String status) {
+  switch (status) {
+    case 'expired':
+      return Colors.red;
+    case 'expiring_soon':
+      return Colors.orange;
+    default:
+      return Colors.green;
+  }
+}
+
+class StockOverviewScreen extends StatefulWidget {
+  const StockOverviewScreen({super.key});
+
+  @override
+  State<StockOverviewScreen> createState() => _StockOverviewScreenState();
+}
+
+class _StockOverviewScreenState extends State<StockOverviewScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<StockProvider>().refresh();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final stock = context.watch<StockProvider>();
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Stock')),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FilterChip(
+                label: const Text('Expiring soon'),
+                selected: stock.expiringWithinDaysFilter != null,
+                onSelected: (selected) => stock.setExpiringFilter(selected ? 3 : null),
+              ),
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: stock.refresh,
+              child: _buildBody(stock),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody(StockProvider stock) {
+    if (stock.loading && stock.items.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (stock.error != null) {
+      return ListView(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text('Could not load stock: ${stock.error}\n\nCheck the server URL in Settings.'),
+          ),
+        ],
+      );
+    }
+    if (stock.items.isEmpty) {
+      return const Center(child: Text('No stock yet. Scan something to add it.'));
+    }
+    return ListView.separated(
+      itemCount: stock.items.length,
+      separatorBuilder: (_, _) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final item = stock.items[index];
+        return ListTile(
+          leading: CircleAvatar(backgroundColor: _statusColor(item.status), radius: 6),
+          title: Text(item.productName),
+          subtitle: Text([
+            if (item.locationName != null) item.locationName!,
+            if (item.bestBeforeDate != null)
+              'BBD: ${item.bestBeforeDate!.toIso8601String().split('T').first}',
+            '${item.amount}',
+          ].join(' · ')),
+          onLongPress: () => _confirmDelete(context, stock, item.id, item.productName),
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, StockProvider stock, int id, String name) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove from stock?'),
+        content: Text('This deletes this batch of "$name".'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
+        ],
+      ),
+    );
+    if (confirmed == true) await stock.delete(id);
+  }
+}
