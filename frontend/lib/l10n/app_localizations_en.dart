@@ -69,6 +69,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quantityUnitLabel => 'Quantity unit';
 
   @override
+  String get unitPcsLabel => 'pcs';
+
+  @override
+  String get unitGramsLabel => 'g';
+
+  @override
+  String get unitKilogramsLabel => 'kg';
+
+  @override
+  String get unitMillilitersLabel => 'ml';
+
+  @override
+  String get unitLitersLabel => 'l';
+
+  @override
+  String get unitPackLabel => 'pack';
+
+  @override
+  String get unitOtherLabel => 'Other…';
+
+  @override
+  String get unitCustomLabel => 'Custom unit';
+
+  @override
   String get locationLabel => 'Location';
 
   @override
