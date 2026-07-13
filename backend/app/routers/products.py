@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Product
+from app.models import Product, StockEntry
 from app.schemas import ProductCreate, ProductRead, ProductUpdate
 
 router = APIRouter(prefix="/api/products", tags=["products"])
@@ -52,5 +52,8 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     product = db.get(Product, product_id)
     if not product:
         raise HTTPException(404, "Product not found")
+    has_stock = db.query(StockEntry).filter(StockEntry.product_id == product_id).first()
+    if has_stock:
+        raise HTTPException(409, "Product still has stock entries; remove them first")
     db.delete(product)
     db.commit()
