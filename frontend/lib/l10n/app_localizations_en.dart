@@ -128,6 +128,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewModeBreakdown => 'Expiry breakdown';
 
   @override
+  String get expiryBucketExpired => 'Expired';
+
+  @override
+  String get expiryBucketToday => 'Today';
+
+  @override
+  String get expiryBucketThisWeek => 'This week';
+
+  @override
+  String get expiryBucketLater => 'Later';
+
+  @override
+  String get expiryBucketNoDate => 'No best-before date';
+
+  @override
   String get sortTooltip => 'Sort';
 
   @override

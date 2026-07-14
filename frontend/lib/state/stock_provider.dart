@@ -7,13 +7,19 @@ enum StockSort { bestBeforeDate, name, amount, location }
 
 enum StockViewMode { flat, grouped, breakdown }
 
+/// Which date-based bucket a stock item falls into in
+/// [StockProvider.expiryBreakdown]. Kept as a key rather than a display
+/// string so the provider stays free of UI strings -- the widget layer maps
+/// this to a localized header.
+enum ExpiryBucketKey { expired, today, thisWeek, later, noDate }
+
 /// A date-based bucket of stock items ("Expired", "Today", "This week", ...)
 /// for [StockProvider.expiryBreakdown].
 class ExpiryBucket {
-  final String label;
+  final ExpiryBucketKey key;
   final List<StockItem> items;
 
-  ExpiryBucket(this.label, this.items);
+  ExpiryBucket(this.key, this.items);
 }
 
 /// Same product, summed across however many batches/locations it's spread
@@ -131,11 +137,11 @@ class StockProvider extends ChangeNotifier {
       }
     }
     return [
-      if (expired.isNotEmpty) ExpiryBucket('Expired', expired),
-      if (today.isNotEmpty) ExpiryBucket('Today', today),
-      if (thisWeek.isNotEmpty) ExpiryBucket('This week', thisWeek),
-      if (later.isNotEmpty) ExpiryBucket('Later', later),
-      if (noDate.isNotEmpty) ExpiryBucket('No best-before date', noDate),
+      if (expired.isNotEmpty) ExpiryBucket(ExpiryBucketKey.expired, expired),
+      if (today.isNotEmpty) ExpiryBucket(ExpiryBucketKey.today, today),
+      if (thisWeek.isNotEmpty) ExpiryBucket(ExpiryBucketKey.thisWeek, thisWeek),
+      if (later.isNotEmpty) ExpiryBucket(ExpiryBucketKey.later, later),
+      if (noDate.isNotEmpty) ExpiryBucket(ExpiryBucketKey.noDate, noDate),
     ];
   }
 

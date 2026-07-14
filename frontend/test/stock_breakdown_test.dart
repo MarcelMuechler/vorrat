@@ -25,19 +25,19 @@ void main() {
       _item(name: 'No Date Salt'),
     ];
 
-    final buckets = {for (final b in provider.expiryBreakdown) b.label: b.items};
+    final buckets = {for (final b in provider.expiryBreakdown) b.key: b.items};
 
-    expect(buckets['Expired']!.single.productName, 'Old Milk');
-    expect(buckets['Today']!.single.productName, 'Todays Bread');
-    expect(buckets['This week']!.single.productName, 'Soon Cheese');
-    expect(buckets['Later']!.single.productName, 'Far Rice');
-    expect(buckets['No best-before date']!.single.productName, 'No Date Salt');
+    expect(buckets[ExpiryBucketKey.expired]!.single.productName, 'Old Milk');
+    expect(buckets[ExpiryBucketKey.today]!.single.productName, 'Todays Bread');
+    expect(buckets[ExpiryBucketKey.thisWeek]!.single.productName, 'Soon Cheese');
+    expect(buckets[ExpiryBucketKey.later]!.single.productName, 'Far Rice');
+    expect(buckets[ExpiryBucketKey.noDate]!.single.productName, 'No Date Salt');
   });
 
   test('omits buckets with no items', () {
     final provider = StockProvider(ApiClient(SettingsProvider()));
     provider.items = [_item(name: 'Only This', bbd: DateTime.now())];
 
-    expect(provider.expiryBreakdown.map((b) => b.label).toList(), ['Today']);
+    expect(provider.expiryBreakdown.map((b) => b.key).toList(), [ExpiryBucketKey.today]);
   });
 }
