@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.utils import normalize_barcode
 
@@ -168,3 +168,40 @@ class StatsRead(BaseModel):
     expiring_soon: int
     low_stock_products: int
     earliest_expiry: date | None
+
+
+class ShoppingListItemCreate(BaseModel):
+    product_id: int | None = None
+    name: str | None = Field(default=None, min_length=1)
+    amount: float = Field(default=1, gt=0)
+    unit: str | None = None
+
+    _strip_name = field_validator("name", mode="before")(_strip_name)
+
+    @model_validator(mode="after")
+    def _require_product_or_name(self) -> "ShoppingListItemCreate":
+        if self.product_id is None and not self.name:
+            raise ValueError("Either product_id or name is required")
+        return self
+
+
+class ShoppingListItemUpdate(BaseModel):
+    product_id: int | None = None
+    name: str | None = Field(default=None, min_length=1)
+    amount: float | None = Field(default=None, gt=0)
+    unit: str | None = None
+    done: bool | None = None
+
+    _strip_name = field_validator("name", mode="before")(_strip_name)
+
+
+class ShoppingListItemRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    product_id: int | None
+    name: str
+    amount: float
+    unit: str | None
+    done: bool
+    created_at: datetime

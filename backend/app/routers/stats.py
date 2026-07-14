@@ -13,6 +13,21 @@ from app.schemas import StatsRead
 router = APIRouter(prefix="/api/stats", tags=["stats"])
 
 
+def low_stock_products_query(db: Session):
+    """Products with a threshold set whose total amount across all stock
+    entries (0 if it has none) is at or below that threshold -- same
+    semantics as ProductGroup.isLowStock on the frontend. Shared with
+    shopping_list.py's add-low-stock endpoint so the two definitions of
+    "low stock" can't drift apart; callers do their own .all()/.count()."""
+    return (
+        db.query(Product)
+        .outerjoin(StockEntry, StockEntry.product_id == Product.id)
+        .filter(Product.low_stock_threshold.isnot(None))
+        .group_by(Product.id)
+        .having(func.coalesce(func.sum(StockEntry.amount), 0) <= Product.low_stock_threshold)
+    )
+
+
 @router.get("", response_model=StatsRead)
 def get_stats(db: Session = Depends(get_db)):
     """Summary counters for Home Assistant REST sensors (#35) -- deliberately
@@ -40,18 +55,7 @@ def get_stats(db: Session = Depends(get_db)):
         if expiry is not None and (earliest_expiry is None or expiry < earliest_expiry):
             earliest_expiry = expiry
 
-    # Products with a threshold set whose total amount across all stock
-    # entries (0 if it has none) is at or below that threshold -- same
-    # semantics as ProductGroup.isLowStock on the frontend.
-    low_stock_subquery = (
-        db.query(Product.id)
-        .outerjoin(StockEntry, StockEntry.product_id == Product.id)
-        .filter(Product.low_stock_threshold.isnot(None))
-        .group_by(Product.id, Product.low_stock_threshold)
-        .having(func.coalesce(func.sum(StockEntry.amount), 0) <= Product.low_stock_threshold)
-        .subquery()
-    )
-    low_stock_products = db.query(low_stock_subquery).count()
+    low_stock_products = low_stock_products_query(db).count()
 
     return StatsRead(
         total_products=total_products,
