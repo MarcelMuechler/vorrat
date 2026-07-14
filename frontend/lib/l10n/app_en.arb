@@ -205,6 +205,8 @@
   },
   "editProductTitle": "Edit product",
   "refreshFromOffTooltip": "Refresh from Open Food Facts",
+  "generateQrLabelTooltip": "Generate QR label",
+  "showQrLabelTooltip": "Show QR label",
   "defaultBestBeforeDaysLabel": "Default best-before days",
   "defaultBestBeforeDaysHint": "e.g. 7 — prefilled when adding this product to stock",
   "openShelfLifeLabel": "Use within (days after opening)",

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
@@ -31,6 +32,13 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   bool _loadingLocations = true;
   bool _saving = false;
   bool _refreshingFromOff = false;
+  late String? _barcode;
+  bool _generatingQrLabel = false;
+
+  /// A synthetic `VORRAT-<id>` label (#105) has no manufacturer entry on
+  /// Open Food Facts to refresh from -- only offer that action for a real
+  /// scanned barcode.
+  bool get _hasRealBarcode => _barcode != null && !_barcode!.startsWith('VORRAT-');
 
   @override
   void initState() {
@@ -40,6 +48,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     _categoryId = p.categoryId;
     _categoryName = p.categoryName;
     _quantityUnit = p.quantityUnit;
+    _barcode = p.barcode;
     _bestBeforeDaysController = TextEditingController(
       text: p.defaultBestBeforeDays == null ? '' : '${p.defaultBestBeforeDays}',
     );
@@ -137,6 +146,62 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     }
   }
 
+  /// Barcode-less products (bulk items, homemade jars) get a synthetic
+  /// `VORRAT-<id>` code written to the normal barcode field via the
+  /// existing PATCH endpoint (#105) -- id-derived, so it can never collide
+  /// with another product's barcode, and every existing scan flow
+  /// (add/open/consume/discard) picks it up unchanged since it's just
+  /// another value in that column.
+  Future<void> _generateQrLabel() async {
+    setState(() => _generatingQrLabel = true);
+    final api = context.read<ApiClient>();
+    try {
+      final updated = await api.updateProduct(widget.product.id, {
+        'barcode': 'VORRAT-${widget.product.id}',
+      });
+      if (!mounted) return;
+      setState(() => _barcode = updated.barcode);
+      await _showQrLabelDialog();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.couldNotSave('$e'))));
+      }
+    } finally {
+      if (mounted) setState(() => _generatingQrLabel = false);
+    }
+  }
+
+  Future<void> _showQrLabelDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+    final barcode = _barcode;
+    if (barcode == null) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // White background regardless of theme -- a QR rendered in the
+            // app's dark-mode colors would otherwise have too little
+            // contrast for a camera to reliably scan it off a screen.
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(12),
+              child: QrImageView(data: barcode, size: 240, backgroundColor: Colors.white),
+            ),
+            const SizedBox(height: 12),
+            Text(widget.product.name, style: Theme.of(context).textTheme.titleMedium),
+          ],
+        ),
+        actions: [
+          FilledButton(onPressed: () => Navigator.pop(context), child: Text(l10n.closeButton)),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -144,7 +209,16 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
       appBar: AppBar(
         title: Text(l10n.editProductTitle),
         actions: [
-          if (widget.product.barcode != null)
+          IconButton(
+            icon: _generatingQrLabel
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.qr_code),
+            tooltip: _barcode == null ? l10n.generateQrLabelTooltip : l10n.showQrLabelTooltip,
+            onPressed: _generatingQrLabel
+                ? null
+                : (_barcode == null ? _generateQrLabel : _showQrLabelDialog),
+          ),
+          if (_hasRealBarcode)
             IconButton(
               icon: _refreshingFromOff
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
@@ -165,8 +239,8 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   ),
                   const SizedBox(height: 12),
                 ],
-                if (widget.product.barcode != null) ...[
-                  Text(l10n.barcodeLabel(widget.product.barcode!)),
+                if (_barcode != null) ...[
+                  Text(l10n.barcodeLabel(_barcode!)),
                   const SizedBox(height: 12),
                 ],
                 TextField(
