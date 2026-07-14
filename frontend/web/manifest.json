@@ -1,11 +1,11 @@
 {
-    "name": "vorrat",
-    "short_name": "vorrat",
+    "name": "Vorrat",
+    "short_name": "Vorrat",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#06464c",
+    "theme_color": "#06464c",
+    "description": "Self-hosted household stock/inventory manager with expiry tracking and barcode scanning.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

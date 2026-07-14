@@ -1,3 +1,5 @@
+<img src="docs/logo.png" alt="Vorrat logo" width="96" align="left">
+
 # Vorrat
 
 [![CI](https://github.com/MarcelMuechler/Vorrat/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcelMuechler/Vorrat/actions/workflows/ci.yml)
@@ -5,6 +7,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Self-hosted household stock/inventory management — a Grocy alternative.
+
+<br clear="left">
 
 ## Features
 
