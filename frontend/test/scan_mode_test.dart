@@ -39,6 +39,8 @@ class FakeApiClient extends ApiClient {
     String? search,
     int? expiringWithinDays,
     int? categoryId,
+    int? limit,
+    int? offset,
   }) async => batches;
 
   @override

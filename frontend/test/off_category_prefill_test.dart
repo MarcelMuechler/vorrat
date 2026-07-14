@@ -16,7 +16,7 @@ class FakeApiClient extends ApiClient {
   Future<List<Location>> listLocations() async => [];
 
   @override
-  Future<List<Category>> listCategories() async => [];
+  Future<List<Category>> listCategories({int? limit, int? offset}) async => [];
 
   @override
   Future<Category> createCategory(String name) async => Category(id: 7, name: name);

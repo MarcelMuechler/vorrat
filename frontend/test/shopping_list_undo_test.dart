@@ -19,7 +19,7 @@ class FakeApiClient extends ApiClient {
   Future<List<ShoppingListItem>> listShoppingList() async => List.of(items);
 
   @override
-  Future<List<Product>> listProducts({String? search}) async => [];
+  Future<List<Product>> listProducts({String? search, int? limit, int? offset}) async => [];
 
   @override
   Future<void> deleteShoppingListItem(int id) async {
