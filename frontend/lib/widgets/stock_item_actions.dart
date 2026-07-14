@@ -53,30 +53,43 @@ class _StockItemActionsState extends State<StockItemActions> {
   Future<double?> _promptAmount(String title) {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: formatAmount(widget.amount));
+    String? errorText;
     return showDialog<double>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(labelText: l10n.amountInStockLabel(formatAmount(widget.amount))),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, double.tryParse(controller.text)),
-            child: Text(l10n.saveButton),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(title),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: l10n.amountInStockLabel(formatAmount(widget.amount)),
+              errorText: errorText,
+            ),
           ),
-        ],
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
+            FilledButton(
+              onPressed: () {
+                final amount = double.tryParse(controller.text);
+                if (amount == null || amount <= 0) {
+                  setState(() => errorText = l10n.amountInvalid);
+                  return;
+                }
+                Navigator.pop(context, amount);
+              },
+              child: Text(l10n.saveButton),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Future<void> _promptAndConsume(String title, String reason) async {
     final amount = await _promptAmount(title);
-    if (amount == null || amount <= 0 || !mounted) return;
+    if (amount == null || !mounted) return;
     setState(() => _expanded = false);
     await widget.onConsume(amount, reason);
   }

@@ -10,6 +10,8 @@
   "productsTitle": "Produkte",
 
   "cancelButton": "Abbrechen",
+  "nameRequired": "Bitte gib einen Namen ein.",
+  "amountInvalid": "Gib eine Menge größer als null ein.",
   "saveButton": "Speichern",
   "deleteButton": "Löschen",
   "addButton": "Hinzufügen",

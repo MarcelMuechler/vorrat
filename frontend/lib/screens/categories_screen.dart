@@ -100,18 +100,32 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   static Future<String?> _promptName(BuildContext context, {required String title, String? initialValue}) {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: initialValue);
+    String? errorText;
     return showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(controller: controller, autofocus: true),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(l10n.saveButton),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(title),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: InputDecoration(errorText: errorText),
           ),
-        ],
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
+            FilledButton(
+              onPressed: () {
+                final name = controller.text.trim();
+                if (name.isEmpty) {
+                  setState(() => errorText = l10n.nameRequired);
+                  return;
+                }
+                Navigator.pop(context, name);
+              },
+              child: Text(l10n.saveButton),
+            ),
+          ],
+        ),
       ),
     );
   }
