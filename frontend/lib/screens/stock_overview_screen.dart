@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -65,6 +67,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   List<Location> _locations = [];
   List<Category> _categories = [];
   final _searchController = TextEditingController();
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -80,6 +83,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -164,6 +168,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
                         tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
                         icon: const Icon(Icons.clear),
                         onPressed: () {
+                          _searchDebounce?.cancel();
                           _searchController.clear();
                           stock.setSearchFilter('');
                           setState(() {});
@@ -173,8 +178,17 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
                 isDense: true,
               ),
               textInputAction: TextInputAction.search,
-              onChanged: (_) => setState(() {}),
-              onSubmitted: (value) => stock.setSearchFilter(value),
+              onChanged: (value) {
+                _searchDebounce?.cancel();
+                _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+                  stock.setSearchFilter(value);
+                });
+                setState(() {});
+              },
+              onSubmitted: (value) {
+                _searchDebounce?.cancel();
+                stock.setSearchFilter(value);
+              },
             ),
           ),
           Padding(
