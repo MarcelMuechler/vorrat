@@ -17,12 +17,14 @@ from app.schemas import (
     BulkStockEntryIds,
     BulkStockMove,
     BulkStockMoveResult,
+    StockConsumeResult,
     StockEntryConsume,
     StockEntryCreate,
     StockEntryRead,
     StockEntryUpdate,
     StockImportResult,
     StockOverviewItem,
+    StockUndoConsume,
 )
 from app.utils import escape_like, normalize_barcode
 
@@ -280,28 +282,34 @@ def add_stock(payload: StockEntryCreate, db: Session = Depends(get_db)):
     return entry
 
 
-def _consume_entry(db: Session, entry: StockEntry, amount: float, reason: str) -> bool:
+def _consume_entry(db: Session, entry: StockEntry, amount: float, reason: str) -> tuple[bool, int]:
     """Logs the consumption and either shrinks or fully removes `entry`.
-    Returns True if the entry was fully consumed (deleted), False if it was
-    only partially reduced and still exists. Caller is responsible for
-    commit/refresh -- kept out of here so bulk callers can batch a single
-    commit across many entries."""
+    Returns (fully_consumed, consumption_log_id): fully_consumed is True if
+    the entry was fully consumed (deleted), False if it was only partially
+    reduced and still exists; consumption_log_id is the id of the
+    ConsumptionLog row just written, needed by callers that let this be
+    undone later (#160). Caller is responsible for commit/refresh -- kept
+    out of here so bulk callers can batch a single commit across many
+    entries."""
     entry.amount -= amount
-    db.add(
-        ConsumptionLog(
-            product_id=entry.product_id,
-            amount=amount,
-            reason=reason,
-            quantity_unit=entry.product.quantity_unit,
-        )
+    log = ConsumptionLog(
+        product_id=entry.product_id,
+        amount=amount,
+        reason=reason,
+        quantity_unit=entry.product.quantity_unit,
     )
+    db.add(log)
+    # Flushed (not committed) so log.id is populated for the caller even
+    # though the transaction isn't final yet -- mirrors _resolve_location/
+    # _resolve_product's use of flush() above for the same reason.
+    db.flush()
     # Repeated float subtraction (e.g. ten 0.1 consumes) can leave a tiny
     # non-zero residue instead of an exact 0, so treat anything below this
     # epsilon as fully consumed rather than leaving a ghost entry behind.
     if entry.amount <= 1e-9:
         db.delete(entry)
-        return True
-    return False
+        return True, log.id
+    return False, log.id
 
 
 def _delete_entry(db: Session, entry: StockEntry) -> None:
@@ -390,15 +398,49 @@ def update_stock(entry_id: int, payload: StockEntryUpdate, db: Session = Depends
     return entry
 
 
-@router.post("/{entry_id}/consume", response_model=StockEntryRead | None)
+@router.post("/{entry_id}/consume", response_model=StockConsumeResult)
 def consume_stock(entry_id: int, payload: StockEntryConsume, db: Session = Depends(get_db)):
     entry = db.get(StockEntry, entry_id)
     if not entry:
         raise HTTPException(404, "Stock entry not found")
-    fully_consumed = _consume_entry(db, entry, payload.amount, payload.reason)
+    fully_consumed, log_id = _consume_entry(db, entry, payload.amount, payload.reason)
     db.commit()
     if fully_consumed:
-        return None
+        return StockConsumeResult(entry=None, consumption_log_id=log_id)
+    db.refresh(entry)
+    return StockConsumeResult(entry=entry, consumption_log_id=log_id)
+
+
+@router.post("/undo/{log_id}", response_model=StockEntryRead, status_code=201)
+def undo_consume(log_id: int, payload: StockUndoConsume, db: Session = Depends(get_db)):
+    """Reverses a single consume (#160): atomically deletes the
+    ConsumptionLog row `log_id` (created by /{entry_id}/consume) and
+    recreates a StockEntry from the fields the frontend passes back --
+    the exact data it held for that batch just before calling consume.
+    Nothing is persisted server-side to make this possible, so all
+    validation (log still exists, product/location still exist) happens
+    before any db.add/db.delete, matching _get_entries_or_404's
+    all-or-nothing pattern above: a 404 here changes nothing. Calling this
+    twice for the same log_id 404s the second time, since the row is
+    already gone."""
+    log = db.get(ConsumptionLog, log_id)
+    if not log:
+        raise HTTPException(404, "Consumption log entry not found")
+    if not db.get(Product, payload.product_id):
+        raise HTTPException(404, "Product not found")
+    if payload.location_id is not None and not db.get(Location, payload.location_id):
+        raise HTTPException(404, "Location not found")
+    entry = StockEntry(
+        product_id=payload.product_id,
+        location_id=payload.location_id,
+        amount=payload.amount,
+        best_before_date=payload.best_before_date,
+        purchased_date=payload.purchased_date,
+        opened_at=payload.opened_at,
+    )
+    db.add(entry)
+    db.delete(log)
+    db.commit()
     db.refresh(entry)
     return entry
 

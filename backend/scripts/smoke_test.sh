@@ -302,8 +302,8 @@ for i in $(seq 1 10); do
     -d '{"amount": 0.1}')
   echo "consume #$i -> $RESPONSE"
 done
-[ "$RESPONSE" = "null" ] \
-  || { echo "FAIL: expected final consume to clear the entry (null response), got $RESPONSE"; exit 1; }
+[ "$(echo "$RESPONSE" | jq -r .entry)" = "null" ] \
+  || { echo "FAIL: expected final consume to clear the entry (entry=null), got $RESPONSE"; exit 1; }
 
 echo "== stock: entry should be gone despite float residue =="
 COUNT=$(curl -sf "$BASE/api/stock?product_id=$FLOAT_PRODUCT_ID" | jq 'length')
@@ -316,6 +316,75 @@ STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$BASE/api/products/$F
 echo "== consumption-log: its rows should be gone along with the product =="
 COUNT=$(curl -sf "$BASE/api/consumption-log" | jq --argjson pid "$FLOAT_PRODUCT_ID" '[.[] | select(.product_id == $pid)] | length')
 [ "$COUNT" = "0" ] || { echo "FAIL: expected 0 consumption-log rows for deleted product, got $COUNT"; exit 1; }
+
+echo "== products: create a third product for the undo-consume checks (#160) =="
+UNDO_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Undo Consume Test"}' | jq -r .id)
+echo "created product $UNDO_PRODUCT_ID"
+
+echo "== stock: add a batch to undo-consume-test (amount=4, with location + best_before_date) =="
+UNDO_ENTRY_ID=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$UNDO_PRODUCT_ID"', "location_id": '"$LOCATION_ID"', "amount": 4, "best_before_date": "'"$FAR_DATE"'"}' \
+  | jq -r .id)
+echo "created stock entry $UNDO_ENTRY_ID"
+
+echo "== stock: consume the whole batch (expect entry=null in response, plus a consumption_log_id) =="
+CONSUME_RESPONSE=$(curl -sf -X POST "$BASE/api/stock/$UNDO_ENTRY_ID/consume" \
+  -H 'content-type: application/json' \
+  -d '{"amount": 4}')
+echo "$CONSUME_RESPONSE" | jq .
+[ "$(echo "$CONSUME_RESPONSE" | jq -r .entry)" = "null" ] \
+  || { echo "FAIL: expected entry=null after fully consuming the undo-test batch, got $CONSUME_RESPONSE"; exit 1; }
+UNDO_LOG_ID=$(echo "$CONSUME_RESPONSE" | jq -r .consumption_log_id)
+[ "$UNDO_LOG_ID" != "null" ] \
+  || { echo "FAIL: expected a consumption_log_id in the consume response, got $CONSUME_RESPONSE"; exit 1; }
+
+echo "== stock: confirm the batch is gone and its consumption-log row exists, before undo =="
+COUNT=$(curl -sf "$BASE/api/stock?product_id=$UNDO_PRODUCT_ID" | jq 'length')
+[ "$COUNT" = "0" ] || { echo "FAIL: expected 0 stock entries for undo-test product before undo, got $COUNT"; exit 1; }
+LOG_COUNT=$(curl -sf "$BASE/api/consumption-log" | jq --argjson id "$UNDO_LOG_ID" '[.[] | select(.id == $id)] | length')
+[ "$LOG_COUNT" = "1" ] \
+  || { echo "FAIL: expected consumption-log row $UNDO_LOG_ID to exist before undo, got $LOG_COUNT"; exit 1; }
+
+echo "== stock/undo: undo the consume (expect the batch restored, log row deleted) (#160) =="
+UNDO_RESPONSE=$(curl -sf -X POST "$BASE/api/stock/undo/$UNDO_LOG_ID" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$UNDO_PRODUCT_ID"', "location_id": '"$LOCATION_ID"', "amount": 4, "best_before_date": "'"$FAR_DATE"'"}')
+echo "$UNDO_RESPONSE" | jq .
+echo "$UNDO_RESPONSE" | jq -e '.amount == 4' > /dev/null \
+  || { echo "FAIL: expected undo to recreate a stock entry with amount=4, got $UNDO_RESPONSE"; exit 1; }
+[ "$(echo "$UNDO_RESPONSE" | jq -r .product_id)" = "$UNDO_PRODUCT_ID" ] \
+  || { echo "FAIL: expected undo to recreate an entry for product $UNDO_PRODUCT_ID, got $UNDO_RESPONSE"; exit 1; }
+[ "$(echo "$UNDO_RESPONSE" | jq -r .location_id)" = "$LOCATION_ID" ] \
+  || { echo "FAIL: expected undo to preserve location_id $LOCATION_ID, got $UNDO_RESPONSE"; exit 1; }
+
+echo "== stock: the batch is back after undo =="
+COUNT=$(curl -sf "$BASE/api/stock?product_id=$UNDO_PRODUCT_ID" | jq 'length')
+[ "$COUNT" = "1" ] || { echo "FAIL: expected 1 stock entry for undo-test product after undo, got $COUNT"; exit 1; }
+
+echo "== consumption-log: the undone log row is gone (usage stats no longer overstated) =="
+LOG_COUNT=$(curl -sf "$BASE/api/consumption-log" | jq --argjson id "$UNDO_LOG_ID" '[.[] | select(.id == $id)] | length')
+[ "$LOG_COUNT" = "0" ] \
+  || { echo "FAIL: expected consumption-log row $UNDO_LOG_ID to be gone after undo, got $LOG_COUNT"; exit 1; }
+
+echo "== stock/undo: undoing the same log a second time fails cleanly (expect 404, already gone) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/stock/undo/$UNDO_LOG_ID" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$UNDO_PRODUCT_ID"', "location_id": '"$LOCATION_ID"', "amount": 4, "best_before_date": "'"$FAR_DATE"'"}')
+[ "$STATUS" = "404" ] \
+  || { echo "FAIL: expected 404 undoing an already-undone consumption log id, got $STATUS"; exit 1; }
+
+echo "== stock/undo: unknown log id (expect 404, nothing created) =="
+BEFORE_UNDO_TEST_COUNT=$(curl -sf "$BASE/api/stock?product_id=$UNDO_PRODUCT_ID" | jq 'length')
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/stock/undo/999999" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$UNDO_PRODUCT_ID"', "amount": 1}')
+[ "$STATUS" = "404" ] || { echo "FAIL: expected 404 undoing unknown consumption log id, got $STATUS"; exit 1; }
+AFTER_UNDO_TEST_COUNT=$(curl -sf "$BASE/api/stock?product_id=$UNDO_PRODUCT_ID" | jq 'length')
+[ "$AFTER_UNDO_TEST_COUNT" = "$BEFORE_UNDO_TEST_COUNT" ] \
+  || { echo "FAIL: expected undo with unknown log id to change nothing, got $BEFORE_UNDO_TEST_COUNT -> $AFTER_UNDO_TEST_COUNT"; exit 1; }
 
 echo "== consumption-log/export.csv: row count matches JSON list, header + Milk's 'used' entry present =="
 LOG_COUNT=$(curl -sf "$BASE/api/consumption-log" | jq 'length')
