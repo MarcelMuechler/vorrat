@@ -12,6 +12,10 @@
   "cancelButton": "Cancel",
   "nameRequired": "Please enter a name.",
   "amountInvalid": "Enter an amount greater than zero.",
+  "amountExceedsStock": "Enter an amount greater than zero and at most {amount} (what's in stock).",
+  "@amountExceedsStock": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
   "saveButton": "Save",
   "deleteButton": "Delete",
   "addButton": "Add",

@@ -61,11 +61,14 @@ class _StockItemActionsState extends State<StockItemActions> {
       initialText: formatAmount(widget.amount),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       labelText: l10n.amountInStockLabel(formatAmount(widget.amount)),
+      // Also rejects anything above what's actually left on this batch --
+      // otherwise the dialog would let you submit e.g. 2 against a 1-unit
+      // entry, which the backend now rejects too (#156).
       parse: (text) {
         final amount = double.tryParse(text);
-        return (amount == null || amount <= 0) ? null : amount;
+        return (amount == null || amount <= 0 || amount > widget.amount) ? null : amount;
       },
-      invalidMessage: l10n.amountInvalid,
+      invalidMessage: l10n.amountExceedsStock(formatAmount(widget.amount)),
     );
   }
 

@@ -12,6 +12,7 @@
   "cancelButton": "Abbrechen",
   "nameRequired": "Bitte gib einen Namen ein.",
   "amountInvalid": "Gib eine Menge größer als null ein.",
+  "amountExceedsStock": "Gib eine Menge größer als null und höchstens {amount} ein (so viel ist auf Lager).",
   "saveButton": "Speichern",
   "deleteButton": "Löschen",
   "addButton": "Hinzufügen",

@@ -152,6 +152,12 @@ abstract class AppLocalizations {
   /// **'Enter an amount greater than zero.'**
   String get amountInvalid;
 
+  /// No description provided for @amountExceedsStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount greater than zero and at most {amount} (what\'s in stock).'**
+  String amountExceedsStock(String amount);
+
   /// No description provided for @saveButton.
   ///
   /// In en, this message translates to:

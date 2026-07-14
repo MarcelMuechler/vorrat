@@ -120,6 +120,42 @@ void main() {
     expect(consumedReason, 'used');
   });
 
+  testWidgets('typing more than what is in stock shows an error and blocks submission (#156)', (tester) async {
+    double? consumedAmount;
+    await tester.pumpWidget(
+      _wrap(
+        canOpen: true,
+        onOpen: () {},
+        onConsume: (amount, _) async {
+          consumedAmount = amount;
+          return true;
+        },
+        onDelete: () async => true,
+      ),
+    );
+
+    await tester.tap(find.text('Jam'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Used'));
+    await tester.pumpAndSettle();
+
+    // widget.amount is 2 (see _wrap) -- 3 exceeds what's actually in stock.
+    await tester.enterText(find.byType(TextField), '3');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    // Dialog stays open showing the error -- onConsume was never called.
+    expect(find.textContaining('at most 2'), findsOneWidget);
+    expect(consumedAmount, isNull);
+
+    // Correcting it to a valid amount still works.
+    await tester.enterText(find.byType(TextField), '2');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(consumedAmount, 2);
+  });
+
   testWidgets('swiping left spoils the whole amount, no dialog', (tester) async {
     double? consumedAmount;
     String? consumedReason;

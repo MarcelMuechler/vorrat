@@ -36,6 +36,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get amountInvalid => 'Gib eine Menge größer als null ein.';
 
   @override
+  String amountExceedsStock(String amount) {
+    return 'Gib eine Menge größer als null und höchstens $amount ein (so viel ist auf Lager).';
+  }
+
+  @override
   String get saveButton => 'Speichern';
 
   @override
