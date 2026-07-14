@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 
 from app.db import get_db
-from app.models import Product, StockEntry
+from app.models import ConsumptionLog, Product, StockEntry
 from app.off_client import lookup_off
 from app.schemas import ProductCreate, ProductRead, ProductUpdate
 from app.utils import escape_like, normalize_barcode
@@ -75,5 +75,11 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     has_stock = db.query(StockEntry).filter(StockEntry.product_id == product_id).first()
     if has_stock:
         raise HTTPException(409, "Product still has stock entries; remove them first")
+    # ConsumptionLog rows reference this product too, but unlike StockEntry
+    # above we don't block the delete on them -- with PRAGMA foreign_keys=ON
+    # (db.py) a leftover row would otherwise turn this into a raw
+    # IntegrityError. Deliberately bulk-delete them instead: waste history
+    # for a product that no longer exists isn't meaningful to keep around.
+    db.query(ConsumptionLog).filter(ConsumptionLog.product_id == product_id).delete()
     db.delete(product)
     db.commit()
