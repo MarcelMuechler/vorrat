@@ -398,6 +398,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get refreshFromOffTooltip => 'Refresh from Open Food Facts';
 
   @override
+  String get generateQrLabelTooltip => 'Generate QR label';
+
+  @override
+  String get showQrLabelTooltip => 'Show QR label';
+
+  @override
   String get defaultBestBeforeDaysLabel => 'Default best-before days';
 
   @override

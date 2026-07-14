@@ -764,6 +764,18 @@ abstract class AppLocalizations {
   /// **'Refresh from Open Food Facts'**
   String get refreshFromOffTooltip;
 
+  /// No description provided for @generateQrLabelTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate QR label'**
+  String get generateQrLabelTooltip;
+
+  /// No description provided for @showQrLabelTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show QR label'**
+  String get showQrLabelTooltip;
+
   /// No description provided for @defaultBestBeforeDaysLabel.
   ///
   /// In en, this message translates to:

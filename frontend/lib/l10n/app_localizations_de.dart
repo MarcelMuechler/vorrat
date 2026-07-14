@@ -399,6 +399,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get refreshFromOffTooltip => 'Von Open Food Facts aktualisieren';
 
   @override
+  String get generateQrLabelTooltip => 'QR-Etikett erstellen';
+
+  @override
+  String get showQrLabelTooltip => 'QR-Etikett anzeigen';
+
+  @override
   String get defaultBestBeforeDaysLabel => 'Standard-Haltbarkeitstage';
 
   @override
