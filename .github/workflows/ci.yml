@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
       - working-directory: backend
-        run: uv sync
+        run: uv sync --frozen
       - working-directory: backend
         run: uv run python -c "import app.main"
 
@@ -38,3 +38,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker build -f vorrat/Dockerfile -t vorrat .
+
+      # Run the actual production image the way README.md's "Running standalone via
+      # Docker" section documents (-v ...:/data — the run script's `alembic upgrade
+      # head` fails without it, since SQLite can't create the missing /data dir on
+      # its own). This is a fresh named volume every run, so alembic upgrade head
+      # runs against a fresh SQLite db from scratch every time — see
+      # vorrat/rootfs/etc/services.d/vorrat/run, which runs it before starting uvicorn.
+      - name: Start container
+        run: docker run -d --name vorrat -p 8099:8099 -v vorrat-data:/data vorrat
+
+      - name: Wait for readiness
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8099/api/health > /dev/null; then
+              echo "backend is up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "backend did not become ready in time"
+          docker logs vorrat
+          exit 1
+
+      # No X-Ingress-Path header here (standalone container, no HA supervisor in
+      # front of it) -- main.py's "/" route falls back to base href "/".
+      - name: Verify /api/health and the Flutter root document
+        run: |
+          curl -sf http://localhost:8099/api/health | grep -q '"status": *"ok"'
+          curl -sf http://localhost:8099/ | grep -qF '<base href="/">'
+
+      - name: Run smoke test suite
+        working-directory: backend
+        run: BASE=http://localhost:8099 ./scripts/smoke_test.sh
+
+      - name: Container logs
+        if: always()
+        run: docker logs vorrat
