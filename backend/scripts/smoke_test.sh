@@ -177,4 +177,38 @@ echo "== shopping-list: delete missing item (expect 404) =="
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$BASE/api/shopping-list/999999")
 [ "$STATUS" = "404" ] || { echo "FAIL: expected 404 deleting missing item, got $STATUS"; exit 1; }
 
+echo "== products: create a second product for the float-residue/delete-history checks =="
+FLOAT_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Float Residue Test"}' | jq -r .id)
+echo "created product $FLOAT_PRODUCT_ID"
+
+echo "== stock: add 1.0 unit of it =="
+FLOAT_ENTRY_ID=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$FLOAT_PRODUCT_ID"', "amount": 1.0}' | jq -r .id)
+echo "created stock entry $FLOAT_ENTRY_ID"
+
+echo "== stock: consume it via ten 0.1 partial consumes (float residue after the last one) =="
+for i in $(seq 1 10); do
+  RESPONSE=$(curl -sf -X POST "$BASE/api/stock/$FLOAT_ENTRY_ID/consume" \
+    -H 'content-type: application/json' \
+    -d '{"amount": 0.1}')
+  echo "consume #$i -> $RESPONSE"
+done
+[ "$RESPONSE" = "null" ] \
+  || { echo "FAIL: expected final consume to clear the entry (null response), got $RESPONSE"; exit 1; }
+
+echo "== stock: entry should be gone despite float residue =="
+COUNT=$(curl -sf "$BASE/api/stock?product_id=$FLOAT_PRODUCT_ID" | jq 'length')
+[ "$COUNT" = "0" ] || { echo "FAIL: expected 0 stock entries after consuming to zero, got $COUNT"; exit 1; }
+
+echo "== products: delete it now that it has consumption-log history but no stock (expect success) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$BASE/api/products/$FLOAT_PRODUCT_ID")
+[ "$STATUS" = "204" ] || { echo "FAIL: expected 204 deleting product with consumption history, got $STATUS"; exit 1; }
+
+echo "== consumption-log: its rows should be gone along with the product =="
+COUNT=$(curl -sf "$BASE/api/consumption-log" | jq --argjson pid "$FLOAT_PRODUCT_ID" '[.[] | select(.product_id == $pid)] | length')
+[ "$COUNT" = "0" ] || { echo "FAIL: expected 0 consumption-log rows for deleted product, got $COUNT"; exit 1; }
+
 echo "OK"
