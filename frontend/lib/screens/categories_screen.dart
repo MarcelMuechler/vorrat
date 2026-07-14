@@ -137,38 +137,55 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       appBar: AppBar(title: Text(l10n.categoriesTitle)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(l10n.couldNotLoadCategories('$_error')),
-                )
-              : _categories.isEmpty
-                  ? Center(child: Text(l10n.noCategoriesYet))
-                  : ListView.separated(
-                      itemCount: _categories.length,
-                      separatorBuilder: (_, _) => const Divider(height: 1),
-                      itemBuilder: (context, index) {
-                        final category = _categories[index];
-                        return ListTile(
-                          title: Text(category.name),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit),
-                                tooltip: l10n.renameTooltip,
-                                onPressed: () => _rename(category),
+          : RefreshIndicator(
+              onRefresh: _refresh,
+              child: _error != null
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text(l10n.couldNotLoadCategories('$_error')),
+                        ),
+                      ],
+                    )
+                  : _categories.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            SizedBox(
+                              height: MediaQuery.sizeOf(context).height * 0.45,
+                              child: Center(child: Text(l10n.noCategoriesYet)),
+                            ),
+                          ],
+                        )
+                      : ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: _categories.length,
+                          separatorBuilder: (_, _) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final category = _categories[index];
+                            return ListTile(
+                              title: Text(category.name),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit),
+                                    tooltip: l10n.renameTooltip,
+                                    onPressed: () => _rename(category),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline),
+                                    tooltip: l10n.deleteButton,
+                                    onPressed: () => _delete(category),
+                                  ),
+                                ],
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline),
-                                tooltip: l10n.deleteButton,
-                                onPressed: () => _delete(category),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                            );
+                          },
+                        ),
+            ),
       floatingActionButton: FloatingActionButton(
         tooltip: l10n.addCategoryTooltip,
         onPressed: _addCategory,
