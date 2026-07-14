@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 import httpx
@@ -21,6 +22,15 @@ _MAX_ENTRIES = 1000
 # must never be cached: a transient outage would otherwise poison the barcode
 # as not-found for an hour, when a retry a second later might succeed.
 _ERROR = object()
+
+# Retry policy for transient failures (network errors, timeouts, 429, 5xx).
+# 3 attempts total, short exponential backoff between them. A per-request
+# timeout of 3s (rather than the previous 5s) keeps the worst case (every
+# attempt genuinely times out) close to the old single-shot latency instead
+# of tripling it — a barcode scan shouldn't be left hanging for ~15s.
+_MAX_ATTEMPTS = 3
+_RETRY_BACKOFF_SECONDS = (0.5, 1.0)
+_REQUEST_TIMEOUT_SECONDS = 3.0
 
 
 def _cache_get(barcode: str) -> tuple[bool, dict | None]:
@@ -74,20 +84,37 @@ async def lookup_off(barcode: str) -> dict | None:
     return result
 
 
-async def _fetch_off(barcode: str) -> dict | None | object:
+async def _request_off(barcode: str) -> dict:
+    """A single OFF request attempt. Raises httpx.HTTPError/ValueError on failure."""
     url = f"{settings.off_base_url}/api/v2/product/{barcode}.json"
     headers = {"User-Agent": settings.off_user_agent}
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(url, headers=headers)
-            response.raise_for_status()
-            data = response.json()
-    except (httpx.HTTPError, ValueError):
-        # ValueError covers response.json() raising JSONDecodeError, e.g. OFF
-        # returning a 200 with an HTML rate-limit/maintenance page instead of
-        # JSON — should be treated as a miss too, not an unhandled 500. But
-        # unlike a genuine "not found", a failed request must not be cached.
-        return _ERROR
+    async with httpx.AsyncClient(timeout=_REQUEST_TIMEOUT_SECONDS) as client:
+        response = await client.get(url, headers=headers)
+        response.raise_for_status()
+        return response.json()
+
+
+async def _fetch_off(barcode: str) -> dict | None | object:
+    data = None
+    for attempt in range(_MAX_ATTEMPTS):
+        try:
+            data = await _request_off(barcode)
+            break
+        except httpx.HTTPStatusError as exc:
+            # A genuine 4xx like 404 "not found" is a clean answer, not a
+            # transient failure — retrying it would just waste time.
+            status = exc.response.status_code
+            retryable = status == 429 or status >= 500
+            if not retryable or attempt == _MAX_ATTEMPTS - 1:
+                return _ERROR
+        except (httpx.HTTPError, ValueError):
+            # ValueError covers response.json() raising JSONDecodeError, e.g. OFF
+            # returning a 200 with an HTML rate-limit/maintenance page instead of
+            # JSON — treated as transient and retried like a network error. But
+            # unlike a genuine "not found", a failed request must not be cached.
+            if attempt == _MAX_ATTEMPTS - 1:
+                return _ERROR
+        await asyncio.sleep(_RETRY_BACKOFF_SECONDS[attempt])
 
     if data.get("status") != 1:
         return None
@@ -136,7 +163,48 @@ if __name__ == "__main__":
     _evict()
     assert len(_CACHE) <= _MAX_ENTRIES
 
-    import asyncio
+    def _http_status_error(status_code: int) -> httpx.HTTPStatusError:
+        request = httpx.Request("GET", "https://example.invalid")
+        response = httpx.Response(status_code, request=request)
+        return httpx.HTTPStatusError("boom", request=request, response=response)
+
+    # Retries a transient failure and succeeds once the network recovers.
+    # These stub out _request_off (the single-attempt helper) rather than
+    # _fetch_off itself, so the retry loop in _fetch_off is exercised for real.
+    _calls = {"n": 0}
+
+    async def _flaky_then_ok(barcode: str) -> dict:
+        _calls["n"] += 1
+        if _calls["n"] < _MAX_ATTEMPTS:
+            raise httpx.ConnectError("simulated network failure")
+        return {"status": 1, "product": {"product_name": "Retried Product"}}
+
+    _request_off = _flaky_then_ok
+    result = asyncio.run(_fetch_off("444"))
+    assert _calls["n"] == _MAX_ATTEMPTS  # failed twice, succeeded on the last attempt
+    assert result["name"] == "Retried Product"
+
+    # Gives up (as _ERROR) once every attempt fails, without exceeding the budget.
+    _calls = {"n": 0}
+
+    async def _always_500(barcode: str) -> dict:
+        _calls["n"] += 1
+        raise _http_status_error(500)
+
+    _request_off = _always_500
+    assert asyncio.run(_fetch_off("555")) is _ERROR
+    assert _calls["n"] == _MAX_ATTEMPTS
+
+    # A clean 404 "not found" is not retried — it's a real answer, not a glitch.
+    _calls = {"n": 0}
+
+    async def _clean_404(barcode: str) -> dict:
+        _calls["n"] += 1
+        raise _http_status_error(404)
+
+    _request_off = _clean_404
+    assert asyncio.run(_fetch_off("666")) is _ERROR
+    assert _calls["n"] == 1  # no retry attempted
 
     _CACHE.clear()
     _fetch_off = lambda barcode: asyncio.sleep(0, result=_ERROR)  # noqa: E731 — simulate a network failure
