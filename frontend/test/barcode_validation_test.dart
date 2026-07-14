@@ -24,6 +24,11 @@ void main() {
     expect(isPlausibleBarcode('ABC-123-xyz', BarcodeFormat.code128), isTrue);
   });
 
+  test('accepts a scanned VORRAT-<id> QR label (#105) but still rejects an empty QR scan', () {
+    expect(isPlausibleBarcode('VORRAT-42', BarcodeFormat.qrCode), isTrue);
+    expect(isPlausibleBarcode('', BarcodeFormat.qrCode), isFalse);
+  });
+
   test('applies a loose digit-length check for manual entry (no known format)', () {
     expect(isPlausibleBarcode('4260299353119', null), isTrue);
     expect(isPlausibleBarcode('12', null), isFalse);
