@@ -107,8 +107,11 @@ class ApiClient {
     _checkOk(res);
   }
 
-  Future<List<Category>> listCategories() async {
-    final res = await http.get(_uri('/api/categories'));
+  Future<List<Category>> listCategories({int? limit, int? offset}) async {
+    final query = <String, String>{};
+    if (limit != null) query['limit'] = '$limit';
+    if (offset != null) query['offset'] = '$offset';
+    final res = await http.get(_uri('/api/categories', query));
     _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => Category.fromJson(e)).toList();
@@ -139,9 +142,11 @@ class ApiClient {
     return Product.fromJson(jsonDecode(res.body));
   }
 
-  Future<List<Product>> listProducts({String? search}) async {
+  Future<List<Product>> listProducts({String? search, int? limit, int? offset}) async {
     final query = <String, String>{};
     if (search != null && search.isNotEmpty) query['search'] = search;
+    if (limit != null) query['limit'] = '$limit';
+    if (offset != null) query['offset'] = '$offset';
     final res = await http.get(_uri('/api/products', query));
     _checkOk(res);
     final list = jsonDecode(res.body) as List;
@@ -178,6 +183,8 @@ class ApiClient {
     String? search,
     int? expiringWithinDays,
     int? categoryId,
+    int? limit,
+    int? offset,
   }) async {
     final query = <String, String>{};
     if (locationId != null) query['location_id'] = '$locationId';
@@ -185,6 +192,8 @@ class ApiClient {
     if (search != null && search.isNotEmpty) query['search'] = search;
     if (expiringWithinDays != null) query['expiring_within_days'] = '$expiringWithinDays';
     if (categoryId != null) query['category_id'] = '$categoryId';
+    if (limit != null) query['limit'] = '$limit';
+    if (offset != null) query['offset'] = '$offset';
     final res = await http.get(_uri('/api/stock', query));
     _checkOk(res);
     final list = jsonDecode(res.body) as List;

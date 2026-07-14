@@ -17,7 +17,7 @@ class FakeApiClient extends ApiClient {
   Future<List<Location>> listLocations() async => [];
 
   @override
-  Future<List<Product>> listProducts({String? search}) async =>
+  Future<List<Product>> listProducts({String? search, int? limit, int? offset}) async =>
       [Product(id: 42, name: 'Homemade Jam')];
 
   @override
@@ -38,6 +38,8 @@ class FakeApiClient extends ApiClient {
     String? search,
     int? expiringWithinDays,
     int? categoryId,
+    int? limit,
+    int? offset,
   }) async => [];
 }
 

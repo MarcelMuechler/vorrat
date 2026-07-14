@@ -13,7 +13,7 @@ class FakeApiClient extends ApiClient {
   int _nextId = 2;
 
   @override
-  Future<List<Category>> listCategories() async => categories;
+  Future<List<Category>> listCategories({int? limit, int? offset}) async => categories;
 
   @override
   Future<Category> createCategory(String name) async {
