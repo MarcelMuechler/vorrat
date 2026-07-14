@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.13.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.12.0...v0.13.0) (2026-07-14)
+
+
+### Features
+
+* **backend:** add target_stock_level to Product ([#117](https://github.com/MarcelMuechler/Vorrat/issues/117)) ([8dffb25](https://github.com/MarcelMuechler/Vorrat/commit/8dffb25014d1f4692c005781e9e68c64b0c832b1))
+* **backend:** restock to target_stock_level in add-low-stock ([#117](https://github.com/MarcelMuechler/Vorrat/issues/117)) ([09f13da](https://github.com/MarcelMuechler/Vorrat/commit/09f13da66b77cf8ac4b1bbef8a5e90811f2a56ed))
+* **frontend:** edit target_stock_level on the product screen ([#117](https://github.com/MarcelMuechler/Vorrat/issues/117)) ([73ac6c3](https://github.com/MarcelMuechler/Vorrat/commit/73ac6c382c23b2f9d48a85c377c4f054e445a038))
+* roll out the new logo as favicon, app icon, and HA add-on icon ([5f16135](https://github.com/MarcelMuechler/Vorrat/commit/5f16135df49126c12fb0cfb0e14718854fc4c48e))
+
 ## [0.12.0](https://github.com/MarcelMuechler/vorrat/compare/v0.11.0...v0.12.0) (2026-07-14)
 
 
