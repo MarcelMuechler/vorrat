@@ -34,6 +34,9 @@ cd backend && uv run uvicorn app.main:app --reload
 cd frontend && flutter build web && python3 -m http.server 8090 -d build/web
 ```
 
+The backend exposes interactive API documentation at `http://localhost:8000/docs` (Swagger UI) —
+open it to browse endpoints, see request/response schemas, and try the REST API directly.
+
 ## Installing on Home Assistant
 
 In Home Assistant, go to Settings → Add-ons → Add-on Store → ⋮ → Repositories, and add
