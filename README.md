@@ -1,5 +1,9 @@
 # Vorrat
 
+[![CI](https://github.com/MarcelMuechler/Vorrat/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcelMuechler/Vorrat/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/MarcelMuechler/Vorrat)](https://github.com/MarcelMuechler/Vorrat/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Self-hosted household stock/inventory management — a Grocy alternative.
 
 ## Features
@@ -220,3 +224,7 @@ automation:
 MQTT and a custom HA integration were both considered and rejected for v1 — `rest:` covers
 the "show a number, fire an automation" use case with nothing to run or maintain beyond this
 one endpoint.
+
+## License
+
+[MIT](LICENSE)
