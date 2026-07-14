@@ -137,38 +137,55 @@ class _LocationsScreenState extends State<LocationsScreen> {
       appBar: AppBar(title: Text(l10n.locationsTitle)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(l10n.couldNotLoadLocations('$_error')),
-                )
-              : _locations.isEmpty
-                  ? Center(child: Text(l10n.noLocationsYet))
-                  : ListView.separated(
-                      itemCount: _locations.length,
-                      separatorBuilder: (_, _) => const Divider(height: 1),
-                      itemBuilder: (context, index) {
-                        final location = _locations[index];
-                        return ListTile(
-                          title: Text(location.name),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit),
-                                tooltip: l10n.renameTooltip,
-                                onPressed: () => _rename(location),
+          : RefreshIndicator(
+              onRefresh: _refresh,
+              child: _error != null
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text(l10n.couldNotLoadLocations('$_error')),
+                        ),
+                      ],
+                    )
+                  : _locations.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            SizedBox(
+                              height: MediaQuery.sizeOf(context).height * 0.45,
+                              child: Center(child: Text(l10n.noLocationsYet)),
+                            ),
+                          ],
+                        )
+                      : ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: _locations.length,
+                          separatorBuilder: (_, _) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final location = _locations[index];
+                            return ListTile(
+                              title: Text(location.name),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit),
+                                    tooltip: l10n.renameTooltip,
+                                    onPressed: () => _rename(location),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline),
+                                    tooltip: l10n.deleteButton,
+                                    onPressed: () => _delete(location),
+                                  ),
+                                ],
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline),
-                                tooltip: l10n.deleteButton,
-                                onPressed: () => _delete(location),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                            );
+                          },
+                        ),
+            ),
       floatingActionButton: FloatingActionButton(
         tooltip: l10n.addLocationTooltip,
         onPressed: _addLocation,
