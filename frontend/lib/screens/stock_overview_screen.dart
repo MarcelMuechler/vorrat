@@ -8,20 +8,10 @@ import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../state/stock_provider.dart';
 import '../util/format.dart';
+import '../util/status.dart';
 import '../widgets/stock_item_actions.dart';
 import 'product_batches_screen.dart';
 import 'product_detail_screen.dart';
-
-Color _statusColor(String status) {
-  switch (status) {
-    case 'expired':
-      return Colors.red;
-    case 'expiring_soon':
-      return Colors.orange;
-    default:
-      return Colors.green;
-  }
-}
 
 String _bucketLabel(AppLocalizations l10n, ExpiryBucketKey key) {
   switch (key) {
@@ -333,7 +323,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   Widget _buildGroupTile(BuildContext context, ProductGroup group) {
     final l10n = AppLocalizations.of(context)!;
     return ListTile(
-      leading: CircleAvatar(backgroundColor: _statusColor(group.status), radius: 6),
+      leading: statusDot(context, group.status),
       title: Text(group.productName),
       subtitle: Text([
         if (group.locationNames.isNotEmpty) group.locationNames.join(', '),
@@ -345,7 +335,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
           if (group.isLowStock) ...[
             Tooltip(
               message: l10n.lowStockChip,
-              child: const Icon(Icons.production_quantity_limits, color: Colors.orange, size: 20),
+              child: Icon(Icons.production_quantity_limits, color: statusColor('expiring_soon'), size: 20),
             ),
             const SizedBox(width: 4),
           ],
@@ -363,7 +353,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   Widget _buildItemTile(BuildContext context, StockProvider stock, StockItem item) {
     return StockItemActions(
       key: ValueKey(item.id),
-      leading: CircleAvatar(backgroundColor: _statusColor(item.status), radius: 6),
+      leading: statusDot(context, item.status),
       title: Text(item.productName),
       subtitle: Text([
         if (item.locationName != null) item.locationName!,

@@ -6,19 +6,9 @@ import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../state/stock_provider.dart';
 import '../util/format.dart';
+import '../util/status.dart';
 import '../widgets/stock_item_actions.dart';
 import 'product_detail_screen.dart';
-
-Color _statusColor(String status) {
-  switch (status) {
-    case 'expired':
-      return Colors.red;
-    case 'expiring_soon':
-      return Colors.orange;
-    default:
-      return Colors.green;
-  }
-}
 
 /// All batches of a single product -- the drill-in target once the Stock
 /// overview groups by product (#29), but useful to reach directly too, and
@@ -150,7 +140,7 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
                           final item = _items[index];
                           return StockItemActions(
                             key: ValueKey(item.id),
-                            leading: CircleAvatar(backgroundColor: _statusColor(item.status), radius: 6),
+                            leading: statusDot(context, item.status),
                             title: Text(formatAmount(item.amount)),
                             subtitle: Text([
                               if (item.locationName != null) item.locationName!,

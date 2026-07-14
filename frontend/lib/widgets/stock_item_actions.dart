@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../util/format.dart';
+import '../util/status.dart';
 
 /// Wraps a stock batch's list tile with the shared interaction model (#75):
 /// tapping reveals Open/Use/Spoil buttons beneath it (Open only shown while
@@ -102,13 +103,13 @@ class _StockItemActionsState extends State<StockItemActions> {
         Dismissible(
           key: ValueKey(widget.dismissibleKey),
           background: Container(
-            color: Colors.green,
+            color: statusColor('ok'),
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(l10n.usedLabel, style: const TextStyle(color: Colors.white)),
           ),
           secondaryBackground: Container(
-            color: Colors.red,
+            color: statusColor('expired'),
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(l10n.spoiledLabel, style: const TextStyle(color: Colors.white)),
