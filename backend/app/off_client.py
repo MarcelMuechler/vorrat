@@ -16,6 +16,12 @@ _TTL_FOUND_SECONDS = 24 * 60 * 60
 _TTL_NOT_FOUND_SECONDS = 60 * 60
 _MAX_ENTRIES = 1000
 
+# Sentinel distinguishing "the request itself failed" (network error, timeout,
+# malformed response) from a genuine OFF "product not found" (None). Errors
+# must never be cached: a transient outage would otherwise poison the barcode
+# as not-found for an hour, when a retry a second later might succeed.
+_ERROR = object()
+
 
 def _cache_get(barcode: str) -> tuple[bool, dict | None]:
     """Returns (hit, result). A stale entry counts as a miss and is dropped."""
@@ -61,11 +67,14 @@ async def lookup_off(barcode: str) -> dict | None:
         return cached
 
     result = await _fetch_off(barcode)
+    if result is _ERROR:
+        # Transient failure: don't cache, so the next scan retries immediately.
+        return None
     _cache_set(barcode, result)
     return result
 
 
-async def _fetch_off(barcode: str) -> dict | None:
+async def _fetch_off(barcode: str) -> dict | None | object:
     url = f"{settings.off_base_url}/api/v2/product/{barcode}.json"
     headers = {"User-Agent": settings.off_user_agent}
     try:
@@ -76,8 +85,9 @@ async def _fetch_off(barcode: str) -> dict | None:
     except (httpx.HTTPError, ValueError):
         # ValueError covers response.json() raising JSONDecodeError, e.g. OFF
         # returning a 200 with an HTML rate-limit/maintenance page instead of
-        # JSON — should be treated as a miss too, not an unhandled 500.
-        return None
+        # JSON — should be treated as a miss too, not an unhandled 500. But
+        # unlike a genuine "not found", a failed request must not be cached.
+        return _ERROR
 
     if data.get("status") != 1:
         return None
@@ -125,5 +135,12 @@ if __name__ == "__main__":
         _CACHE[str(i)] = (time.monotonic() + 1000, {"i": i})
     _evict()
     assert len(_CACHE) <= _MAX_ENTRIES
+
+    import asyncio
+
+    _CACHE.clear()
+    _fetch_off = lambda barcode: asyncio.sleep(0, result=_ERROR)  # noqa: E731 — simulate a network failure
+    assert asyncio.run(lookup_off("333")) is None  # never-raises contract holds
+    assert "333" not in _CACHE  # but the error is NOT cached
 
     print("off_client self-check OK")
