@@ -191,6 +191,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String couldNotDeleteStockEntry(String error) {
+    return 'Löschen fehlgeschlagen: $error';
+  }
+
+  @override
   String get expiryToday => 'Läuft heute ab';
 
   @override

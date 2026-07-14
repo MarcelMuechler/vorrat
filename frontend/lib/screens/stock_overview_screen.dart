@@ -386,7 +386,16 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
       ),
     );
     if (confirmed != true) return false;
-    await stock.delete(id);
-    return true;
+    try {
+      await stock.delete(id);
+      return true;
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotDeleteStockEntry('$e'))));
+      }
+      return false;
+    }
   }
 }

@@ -83,6 +83,10 @@
   "@couldNotConsume": {
     "placeholders": { "error": { "type": "String" } }
   },
+  "couldNotDeleteStockEntry": "Could not delete: {error}",
+  "@couldNotDeleteStockEntry": {
+    "placeholders": { "error": { "type": "String" } }
+  },
 
   "expiryToday": "Expires today",
   "expiryTomorrow": "Expires tomorrow",

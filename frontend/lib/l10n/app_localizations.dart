@@ -428,6 +428,12 @@ abstract class AppLocalizations {
   /// **'Could not consume: {error}'**
   String couldNotConsume(String error);
 
+  /// No description provided for @couldNotDeleteStockEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete: {error}'**
+  String couldNotDeleteStockEntry(String error);
+
   /// No description provided for @expiryToday.
   ///
   /// In en, this message translates to:

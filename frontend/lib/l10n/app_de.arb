@@ -59,6 +59,7 @@
   "removeStockTitle": "Aus dem Bestand entfernen?",
   "deleteBatchConfirm": "Dies löscht diese Charge von \"{name}\".",
   "couldNotConsume": "Verbrauch fehlgeschlagen: {error}",
+  "couldNotDeleteStockEntry": "Löschen fehlgeschlagen: {error}",
 
   "expiryToday": "Läuft heute ab",
   "expiryTomorrow": "Läuft morgen ab",
