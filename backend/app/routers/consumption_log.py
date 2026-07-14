@@ -1,6 +1,9 @@
+import csv
+import io
 from datetime import date
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, contains_eager
 
 from app.db import get_db
@@ -10,13 +13,12 @@ from app.schemas import ConsumptionLogItem, ConsumptionLogRead
 router = APIRouter(prefix="/api/consumption-log", tags=["consumption-log"])
 
 
-@router.get("", response_model=list[ConsumptionLogItem])
-def list_consumption_log(
+def _query_consumption_log(
+    db: Session,
     since: date | None = None,
     until: date | None = None,
     reason: str | None = None,
-    db: Session = Depends(get_db),
-):
+) -> list[ConsumptionLogItem]:
     query = (
         db.query(ConsumptionLog)
         .join(Product)
@@ -35,3 +37,32 @@ def list_consumption_log(
         )
         for entry in query.order_by(ConsumptionLog.created_at.desc()).all()
     ]
+
+
+@router.get("", response_model=list[ConsumptionLogItem])
+def list_consumption_log(
+    since: date | None = None,
+    until: date | None = None,
+    reason: str | None = None,
+    db: Session = Depends(get_db),
+):
+    return _query_consumption_log(db, since, until, reason)
+
+
+@router.get("/export.csv")
+def export_consumption_log_csv(
+    since: date | None = None,
+    until: date | None = None,
+    reason: str | None = None,
+    db: Session = Depends(get_db),
+):
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["created_at", "product_name", "amount", "reason"])
+    for item in _query_consumption_log(db, since, until, reason):
+        writer.writerow([item.created_at, item.product_name, item.amount, item.reason])
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=consumption_log.csv"},
+    )
