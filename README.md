@@ -10,6 +10,12 @@ Self-hosted household stock/inventory management — a Grocy alternative.
 - Shopping list, with a one-tap "add low stock" shortcut
 - Deployable as a Home Assistant app, or standalone via Docker
 
+## Screenshots
+
+| Stock | Shopping list | Settings |
+|---|---|---|
+| ![Stock overview with expiry status](docs/screenshots/stock.png) | ![Shopping list](docs/screenshots/shopping.png) | ![Settings](docs/screenshots/settings.png) |
+
 ## Layout
 
 - `backend/` — FastAPI + SQLAlchemy + Alembic + SQLite REST API
