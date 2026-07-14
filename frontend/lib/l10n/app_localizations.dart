@@ -1112,6 +1112,18 @@ abstract class AppLocalizations {
   /// **'Add stock from a spreadsheet in the same format as the export'**
   String get importCsvSubtitle;
 
+  /// No description provided for @exportConsumptionLogCsvTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export consumption/waste log (CSV)'**
+  String get exportConsumptionLogCsvTitle;
+
+  /// No description provided for @exportConsumptionLogCsvSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Download usage and waste history as a spreadsheet'**
+  String get exportConsumptionLogCsvSubtitle;
+
   /// No description provided for @importResultTitle.
   ///
   /// In en, this message translates to:

@@ -634,6 +634,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add stock from a spreadsheet in the same format as the export';
 
   @override
+  String get exportConsumptionLogCsvTitle =>
+      'Export consumption/waste log (CSV)';
+
+  @override
+  String get exportConsumptionLogCsvSubtitle =>
+      'Download usage and waste history as a spreadsheet';
+
+  @override
   String get importResultTitle => 'Import complete';
 
   @override

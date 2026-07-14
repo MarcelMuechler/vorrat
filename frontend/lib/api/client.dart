@@ -239,6 +239,13 @@ class ApiClient {
     return uri.hasScheme ? uri : Uri.base.resolveUri(uri);
   }
 
+  /// Same approach as [exportStockCsvUrl] -- downloaded by opening the URL
+  /// directly rather than fetched here.
+  Uri exportConsumptionLogCsvUrl() {
+    final uri = _uri('/api/consumption-log/export.csv');
+    return uri.hasScheme ? uri : Uri.base.resolveUri(uri);
+  }
+
   /// Sends the raw CSV text as the request body -- matches how the backend
   /// reads it (no multipart parsing needed there) and is the simplest thing
   /// for `package:http` to send after reading a picked file as a string.

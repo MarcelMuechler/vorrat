@@ -128,6 +128,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _exportConsumptionLogCsv() async {
+    final l10n = AppLocalizations.of(context)!;
+    final url = context.read<ApiClient>().exportConsumptionLogCsvUrl();
+    try {
+      await openInBrowser(url.toString());
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotExport('$e'))));
+      }
+    }
+  }
+
   Future<void> _importStockCsv() async {
     const typeGroup = XTypeGroup(label: 'csv', extensions: ['csv'], mimeTypes: ['text/csv']);
     final file = await openFile(acceptedTypeGroups: [typeGroup]);
@@ -344,6 +358,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: Text(l10n.importCsvTitle),
               subtitle: Text(l10n.importCsvSubtitle),
               onTap: _importStockCsv,
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.file_download_outlined),
+              title: Text(l10n.exportConsumptionLogCsvTitle),
+              subtitle: Text(l10n.exportConsumptionLogCsvSubtitle),
+              onTap: _exportConsumptionLogCsv,
             ),
             if (_wastedThisMonth != null) ...[
               const Divider(),
