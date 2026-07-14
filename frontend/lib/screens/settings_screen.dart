@@ -224,9 +224,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Text(l10n.serverUrlDescription),
             const SizedBox(height: 12),
             TextField(
@@ -387,6 +388,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ],
+          ),
         ),
       ),
     );
