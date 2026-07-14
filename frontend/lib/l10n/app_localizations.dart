@@ -140,6 +140,18 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get cancelButton;
 
+  /// No description provided for @nameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a name.'**
+  String get nameRequired;
+
+  /// No description provided for @amountInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount greater than zero.'**
+  String get amountInvalid;
+
   /// No description provided for @saveButton.
   ///
   /// In en, this message translates to:

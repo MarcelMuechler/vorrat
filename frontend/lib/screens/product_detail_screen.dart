@@ -73,21 +73,35 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Future<void> _addLocation() async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
+    String? errorText;
     final name = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.newLocationTitle),
-        content: TextField(controller: controller, autofocus: true),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(l10n.addButton),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(l10n.newLocationTitle),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: InputDecoration(errorText: errorText),
           ),
-        ],
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
+            FilledButton(
+              onPressed: () {
+                final name = controller.text.trim();
+                if (name.isEmpty) {
+                  setState(() => errorText = l10n.nameRequired);
+                  return;
+                }
+                Navigator.pop(context, name);
+              },
+              child: Text(l10n.addButton),
+            ),
+          ],
+        ),
       ),
     );
-    if (name == null || name.isEmpty || !mounted) return;
+    if (name == null || !mounted) return;
     final api = context.read<ApiClient>();
     try {
       final location = await api.createLocation(name);

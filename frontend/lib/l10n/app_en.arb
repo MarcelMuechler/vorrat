@@ -10,6 +10,8 @@
   "productsTitle": "Products",
 
   "cancelButton": "Cancel",
+  "nameRequired": "Please enter a name.",
+  "amountInvalid": "Enter an amount greater than zero.",
   "saveButton": "Save",
   "deleteButton": "Delete",
   "addButton": "Add",

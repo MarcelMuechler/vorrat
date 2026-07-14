@@ -30,6 +30,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get cancelButton => 'Abbrechen';
 
   @override
+  String get nameRequired => 'Bitte gib einen Namen ein.';
+
+  @override
+  String get amountInvalid => 'Gib eine Menge größer als null ein.';
+
+  @override
   String get saveButton => 'Speichern';
 
   @override
