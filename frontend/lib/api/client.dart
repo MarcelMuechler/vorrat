@@ -204,6 +204,36 @@ class ApiClient {
     await _postJson('/api/stock/$id/consume', {'amount': amount, 'reason': reason});
   }
 
+  /// Fully consumes (whole remaining amount) every listed entry, logged like
+  /// [consumeStock] would for each. Returns the number consumed. Backend is
+  /// all-or-nothing: if any id doesn't exist, nothing is changed and this
+  /// throws [ApiException] instead.
+  Future<int> bulkConsumeStock(List<int> entryIds, {String reason = 'used'}) async {
+    final res = await _postJson('/api/stock/bulk/consume', {
+      'entry_ids': entryIds,
+      'reason': reason,
+    });
+    return (jsonDecode(res.body) as Map<String, dynamic>)['consumed'] as int;
+  }
+
+  /// Deletes every listed entry (logged as 'spoiled', matching [deleteStock]).
+  /// Returns the number deleted. All-or-nothing like [bulkConsumeStock].
+  Future<int> bulkDeleteStock(List<int> entryIds) async {
+    final res = await _postJson('/api/stock/bulk/delete', {'entry_ids': entryIds});
+    return (jsonDecode(res.body) as Map<String, dynamic>)['deleted'] as int;
+  }
+
+  /// Moves every listed entry to [locationId]. Returns the number moved.
+  /// All-or-nothing like [bulkConsumeStock]; also throws if [locationId]
+  /// doesn't exist.
+  Future<int> bulkMoveStock(List<int> entryIds, int locationId) async {
+    final res = await _postJson('/api/stock/bulk/move', {
+      'entry_ids': entryIds,
+      'location_id': locationId,
+    });
+    return (jsonDecode(res.body) as Map<String, dynamic>)['moved'] as int;
+  }
+
   /// Batches removed via [consumeStock] or [deleteStock] since [since] (if
   /// given), most-recent-first -- used for the "N wasted this month" summary.
   Future<List<ConsumptionLogEntry>> listConsumptionLog({DateTime? since, DateTime? until, String? reason}) async {
