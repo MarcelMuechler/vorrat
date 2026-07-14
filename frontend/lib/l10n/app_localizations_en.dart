@@ -36,6 +36,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get amountInvalid => 'Enter an amount greater than zero.';
 
   @override
+  String amountExceedsStock(String amount) {
+    return 'Enter an amount greater than zero and at most $amount (what\'s in stock).';
+  }
+
+  @override
   String get saveButton => 'Save';
 
   @override
