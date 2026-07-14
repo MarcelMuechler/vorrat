@@ -474,8 +474,8 @@ echo "== stock: exact consume of the remaining 0.6 clears the entry =="
 EXACT_RESPONSE=$(curl -sf -X POST "$BASE/api/stock/$OVERCONSUME_ENTRY_ID/consume" \
   -H 'content-type: application/json' \
   -d '{"amount": 0.6}')
-[ "$EXACT_RESPONSE" = "null" ] \
-  || { echo "FAIL: expected exact consume-to-zero to clear the entry (null response), got $EXACT_RESPONSE"; exit 1; }
+[ "$(echo "$EXACT_RESPONSE" | jq -r .entry)" = "null" ] \
+  || { echo "FAIL: expected exact consume-to-zero to clear the entry (entry=null), got $EXACT_RESPONSE"; exit 1; }
 FINAL_COUNT=$(curl -sf "$BASE/api/stock?product_id=$OVERCONSUME_PRODUCT_ID" | jq 'length')
 [ "$FINAL_COUNT" = "0" ] || { echo "FAIL: expected 0 stock entries after exact consume, got $FINAL_COUNT"; exit 1; }
 
