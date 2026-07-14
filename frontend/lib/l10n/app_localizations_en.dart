@@ -158,6 +158,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get expiringSoonChip => 'Expiring soon';
 
   @override
+  String get statusOk => 'OK';
+
+  @override
+  String get statusExpiringSoon => 'Expiring soon';
+
+  @override
+  String get statusExpired => 'Expired';
+
+  @override
   String get allLocationsLabel => 'All locations';
 
   @override

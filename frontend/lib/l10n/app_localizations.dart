@@ -392,6 +392,24 @@ abstract class AppLocalizations {
   /// **'Expiring soon'**
   String get expiringSoonChip;
 
+  /// No description provided for @statusOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get statusOk;
+
+  /// No description provided for @statusExpiringSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiring soon'**
+  String get statusExpiringSoon;
+
+  /// No description provided for @statusExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get statusExpired;
+
   /// No description provided for @allLocationsLabel.
   ///
   /// In en, this message translates to:

@@ -5,6 +5,7 @@ import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../util/format.dart';
+import '../util/status.dart';
 
 class ShoppingListScreen extends StatefulWidget {
   const ShoppingListScreen({super.key});
@@ -286,13 +287,13 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     return Dismissible(
       key: ValueKey(item.id),
       background: Container(
-        color: Colors.red,
+        color: statusColor('expired'),
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
       secondaryBackground: Container(
-        color: Colors.red,
+        color: statusColor('expired'),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: const Icon(Icons.delete_outline, color: Colors.white),
