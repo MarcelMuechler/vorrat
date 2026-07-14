@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -16,6 +18,7 @@ class ProductsScreen extends StatefulWidget {
 
 class _ProductsScreenState extends State<ProductsScreen> {
   final _searchController = TextEditingController();
+  Timer? _searchDebounce;
   List<Product> _products = [];
   List<Category> _categories = [];
   bool _loading = true;
@@ -45,6 +48,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -118,6 +122,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
                         icon: const Icon(Icons.clear),
                         onPressed: () {
+                          _searchDebounce?.cancel();
                           _searchController.clear();
                           _refresh();
                           setState(() {});
@@ -127,8 +132,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 isDense: true,
               ),
               textInputAction: TextInputAction.search,
-              onChanged: (_) => setState(() {}),
-              onSubmitted: (_) => _refresh(),
+              onChanged: (_) {
+                _searchDebounce?.cancel();
+                _searchDebounce = Timer(const Duration(milliseconds: 350), _refresh);
+                setState(() {});
+              },
+              onSubmitted: (_) {
+                _searchDebounce?.cancel();
+                _refresh();
+              },
             ),
           ),
           if (_categories.isNotEmpty)
