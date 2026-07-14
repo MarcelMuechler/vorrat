@@ -332,6 +332,36 @@ abstract class AppLocalizations {
   /// **'Expiry breakdown'**
   String get viewModeBreakdown;
 
+  /// No description provided for @expiryBucketExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get expiryBucketExpired;
+
+  /// No description provided for @expiryBucketToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get expiryBucketToday;
+
+  /// No description provided for @expiryBucketThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get expiryBucketThisWeek;
+
+  /// No description provided for @expiryBucketLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get expiryBucketLater;
+
+  /// No description provided for @expiryBucketNoDate.
+  ///
+  /// In en, this message translates to:
+  /// **'No best-before date'**
+  String get expiryBucketNoDate;
+
   /// No description provided for @sortTooltip.
   ///
   /// In en, this message translates to:

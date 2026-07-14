@@ -23,6 +23,21 @@ Color _statusColor(String status) {
   }
 }
 
+String _bucketLabel(AppLocalizations l10n, ExpiryBucketKey key) {
+  switch (key) {
+    case ExpiryBucketKey.expired:
+      return l10n.expiryBucketExpired;
+    case ExpiryBucketKey.today:
+      return l10n.expiryBucketToday;
+    case ExpiryBucketKey.thisWeek:
+      return l10n.expiryBucketThisWeek;
+    case ExpiryBucketKey.later:
+      return l10n.expiryBucketLater;
+    case ExpiryBucketKey.noDate:
+      return l10n.expiryBucketNoDate;
+  }
+}
+
 enum _RelativeKind { expiry, purchased, opened }
 
 /// Relative day label ("today"/"tomorrow"/"in N days"/"N days ago"), so
@@ -294,7 +309,10 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                  child: Text(bucket.label, style: Theme.of(context).textTheme.titleSmall),
+                  child: Text(
+                    _bucketLabel(l10n, bucket.key),
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                 ),
                 for (final item in bucket.items) _buildItemTile(context, stock, item),
                 const Divider(height: 1),
