@@ -254,6 +254,61 @@ class ApiClient {
     return (jsonDecode(res.body) as Map<String, dynamic>)['expiring_soon_days'] as int;
   }
 
+  Future<List<ShoppingListItem>> listShoppingList() async {
+    final res = await http.get(_uri('/api/shopping-list'));
+    _checkOk(res);
+    final list = jsonDecode(res.body) as List;
+    return list.map((e) => ShoppingListItem.fromJson(e)).toList();
+  }
+
+  Future<ShoppingListItem> createShoppingListItem({
+    int? productId,
+    String? name,
+    double? amount,
+    String? unit,
+  }) async {
+    final payload = <String, dynamic>{
+      'product_id': ?productId,
+      'name': ?name,
+      'amount': ?amount,
+      'unit': ?unit,
+    };
+    final res = await _postJson('/api/shopping-list', payload);
+    return ShoppingListItem.fromJson(jsonDecode(res.body));
+  }
+
+  Future<ShoppingListItem> updateShoppingListItem(int id, Map<String, dynamic> payload) async {
+    final res = await http.patch(
+      _uri('/api/shopping-list/$id'),
+      headers: {'content-type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+    _checkOk(res);
+    return ShoppingListItem.fromJson(jsonDecode(res.body));
+  }
+
+  Future<void> deleteShoppingListItem(int id) async {
+    final res = await http.delete(_uri('/api/shopping-list/$id'));
+    _checkOk(res);
+  }
+
+  /// Returns how many done items were removed.
+  Future<int> clearDoneShoppingListItems() async {
+    final res = await http.delete(_uri('/api/shopping-list/done'));
+    _checkOk(res);
+    return (jsonDecode(res.body) as Map<String, dynamic>)['deleted'] as int;
+  }
+
+  /// Queues one item per currently low-stock product that isn't already on
+  /// the (open) list -- returns whatever was actually created, which may be
+  /// empty if everything low-stock is already queued.
+  Future<List<ShoppingListItem>> addLowStockToShoppingList() async {
+    final res = await http.post(_uri('/api/shopping-list/add-low-stock'));
+    _checkOk(res);
+    final list = jsonDecode(res.body) as List;
+    return list.map((e) => ShoppingListItem.fromJson(e)).toList();
+  }
+
   Future<BarcodeLookupResult> lookupBarcode(String code) async {
     final res = await http.get(_uri('/api/barcode/$code'));
     if (res.statusCode == 404) {

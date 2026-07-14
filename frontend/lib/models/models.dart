@@ -141,6 +141,36 @@ class StockItem {
       );
 }
 
+class ShoppingListItem {
+  final int id;
+  final int? productId;
+  final String name;
+  final double amount;
+  final String? unit;
+  final bool done;
+  final DateTime createdAt;
+
+  ShoppingListItem({
+    required this.id,
+    required this.name,
+    required this.amount,
+    required this.done,
+    required this.createdAt,
+    this.productId,
+    this.unit,
+  });
+
+  factory ShoppingListItem.fromJson(Map<String, dynamic> json) => ShoppingListItem(
+        id: json['id'],
+        productId: json['product_id'],
+        name: json['name'],
+        amount: (json['amount'] as num).toDouble(),
+        unit: json['unit'],
+        done: json['done'],
+        createdAt: DateTime.parse(json['created_at']),
+      );
+}
+
 class ConsumptionLogEntry {
   final int id;
   final int productId;
