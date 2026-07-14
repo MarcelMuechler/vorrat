@@ -117,6 +117,20 @@ class StockEntryConsume(BaseModel):
     reason: Literal["used", "spoiled"] = "used"
 
 
+class StockUndoConsume(BaseModel):
+    """Body for POST /stock/undo/{log_id}: the exact fields needed to
+    recreate the StockEntry that /{entry_id}/consume removed or shrank --
+    supplied by the frontend, which already held this batch's data before
+    it called consume, rather than persisted server-side (#160)."""
+
+    product_id: int
+    location_id: int | None = None
+    amount: float = Field(gt=0)
+    best_before_date: date | None = None
+    purchased_date: date | None = None
+    opened_at: date | None = None
+
+
 class StockEntryRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -129,6 +143,16 @@ class StockEntryRead(BaseModel):
     opened_at: date | None
     created_at: datetime
     updated_at: datetime
+
+
+class StockConsumeResult(BaseModel):
+    """consume_stock's response: the surviving entry (or null if it was fully
+    consumed and deleted) plus the id of the ConsumptionLog row that was
+    written, which the frontend needs to later call /stock/undo/{log_id}
+    (#160) if the user hits Undo."""
+
+    entry: StockEntryRead | None
+    consumption_log_id: int
 
 
 class StockOverviewItem(StockEntryRead):
