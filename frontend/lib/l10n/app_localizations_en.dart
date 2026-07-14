@@ -190,6 +190,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String couldNotDeleteStockEntry(String error) {
+    return 'Could not delete: $error';
+  }
+
+  @override
   String get expiryToday => 'Expires today';
 
   @override
