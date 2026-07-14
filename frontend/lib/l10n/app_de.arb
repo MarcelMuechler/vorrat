@@ -183,6 +183,8 @@
   "exportCsvSubtitle": "Aktuellen Bestand als Tabelle herunterladen",
   "importCsvTitle": "Bestand importieren (CSV)",
   "importCsvSubtitle": "Bestand aus einer Tabelle im Format des Exports hinzufügen",
+  "exportConsumptionLogCsvTitle": "Verbrauchs-/Verlustprotokoll exportieren (CSV)",
+  "exportConsumptionLogCsvSubtitle": "Verbrauchs- und Verlustverlauf als Tabelle herunterladen",
   "importResultTitle": "Import abgeschlossen",
   "importedCount": "{count, plural, =0{Keine Zeilen importiert.} =1{1 Zeile importiert.} other{{count} Zeilen importiert.}}",
   "importErrorsHeading": "{count, plural, =1{1 Zeile konnte nicht importiert werden:} other{{count} Zeilen konnten nicht importiert werden:}}",

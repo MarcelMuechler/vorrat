@@ -327,6 +327,8 @@
   "exportCsvSubtitle": "Download current stock as a spreadsheet",
   "importCsvTitle": "Import stock (CSV)",
   "importCsvSubtitle": "Add stock from a spreadsheet in the same format as the export",
+  "exportConsumptionLogCsvTitle": "Export consumption/waste log (CSV)",
+  "exportConsumptionLogCsvSubtitle": "Download usage and waste history as a spreadsheet",
   "importResultTitle": "Import complete",
   "importedCount": "{count, plural, =0{No rows imported.} =1{1 row imported.} other{{count} rows imported.}}",
   "@importedCount": {

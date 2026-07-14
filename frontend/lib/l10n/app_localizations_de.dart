@@ -638,6 +638,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Bestand aus einer Tabelle im Format des Exports hinzufügen';
 
   @override
+  String get exportConsumptionLogCsvTitle =>
+      'Verbrauchs-/Verlustprotokoll exportieren (CSV)';
+
+  @override
+  String get exportConsumptionLogCsvSubtitle =>
+      'Verbrauchs- und Verlustverlauf als Tabelle herunterladen';
+
+  @override
   String get importResultTitle => 'Import abgeschlossen';
 
   @override
