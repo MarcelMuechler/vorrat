@@ -272,4 +272,84 @@ echo "$ROUNDTRIP_RESULT" | jq .
 [ "$(echo "$ROUNDTRIP_RESULT" | jq '.errors | length')" = "0" ] \
   || { echo "FAIL: expected zero errors round-tripping export.csv, got $ROUNDTRIP_RESULT"; exit 1; }
 
+echo "== stock/bulk: create a fresh product + location and three stock entries for bulk ops =="
+BULK_LOCATION_ID=$(curl -sf -X POST "$BASE/api/locations" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Bulk Test Pantry"}' | jq -r .id)
+BULK_DEST_LOCATION_ID=$(curl -sf -X POST "$BASE/api/locations" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Bulk Test Freezer"}' | jq -r .id)
+BULK_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Bulk Test Product", "quantity_unit": "g"}' | jq -r .id)
+BULK_ID_1=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$BULK_PRODUCT_ID"', "location_id": '"$BULK_LOCATION_ID"', "amount": 1}' | jq -r .id)
+BULK_ID_2=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$BULK_PRODUCT_ID"', "location_id": '"$BULK_LOCATION_ID"', "amount": 2}' | jq -r .id)
+BULK_ID_3=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$BULK_PRODUCT_ID"', "location_id": '"$BULK_LOCATION_ID"', "amount": 3}' | jq -r .id)
+echo "created bulk stock entries $BULK_ID_1 $BULK_ID_2 $BULK_ID_3"
+
+echo "== stock/bulk/move: atomicity check -- one bogus id among real ones changes nothing =="
+STATUS=$(curl -s -o /tmp/bulk_move_fail_body.json -w '%{http_code}' -X POST "$BASE/api/stock/bulk/move" \
+  -H 'content-type: application/json' \
+  -d '{"entry_ids": ['"$BULK_ID_1"', '"$BULK_ID_2"', 999999], "location_id": '"$BULK_DEST_LOCATION_ID"'}')
+[ "$STATUS" = "404" ] || { echo "FAIL: expected 404 for bulk move with a bogus id, got $STATUS: $(cat /tmp/bulk_move_fail_body.json)"; exit 1; }
+UNCHANGED_LOCATION=$(curl -sf "$BASE/api/stock?product_id=$BULK_PRODUCT_ID" | jq -r --argjson id "$BULK_ID_1" '.[] | select(.id == $id) | .location_id')
+[ "$UNCHANGED_LOCATION" = "$BULK_LOCATION_ID" ] \
+  || { echo "FAIL: expected entry $BULK_ID_1 to remain in original location after failed bulk move, got $UNCHANGED_LOCATION"; exit 1; }
+
+echo "== stock/bulk/move: unknown location_id (expect 404, nothing changed) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/stock/bulk/move" \
+  -H 'content-type: application/json' \
+  -d '{"entry_ids": ['"$BULK_ID_1"'], "location_id": 999999}')
+[ "$STATUS" = "404" ] || { echo "FAIL: expected 404 for bulk move to unknown location, got $STATUS"; exit 1; }
+
+echo "== stock/bulk/move: move entries 1 and 2 to the freezer =="
+MOVE_RESULT=$(curl -sf -X POST "$BASE/api/stock/bulk/move" \
+  -H 'content-type: application/json' \
+  -d '{"entry_ids": ['"$BULK_ID_1"', '"$BULK_ID_2"'], "location_id": '"$BULK_DEST_LOCATION_ID"'}')
+echo "$MOVE_RESULT" | jq .
+[ "$(echo "$MOVE_RESULT" | jq -r .moved)" = "2" ] || { echo "FAIL: expected moved=2, got $MOVE_RESULT"; exit 1; }
+[ "$(echo "$MOVE_RESULT" | jq '[.entries[] | select(.location_id == '"$BULK_DEST_LOCATION_ID"')] | length')" = "2" ] \
+  || { echo "FAIL: expected both returned entries to carry the new location_id, got $MOVE_RESULT"; exit 1; }
+
+echo "== stock/bulk/consume: fully consume entries 1 and 2 with reason=spoiled =="
+CONSUME_RESULT=$(curl -sf -X POST "$BASE/api/stock/bulk/consume" \
+  -H 'content-type: application/json' \
+  -d '{"entry_ids": ['"$BULK_ID_1"', '"$BULK_ID_2"'], "reason": "spoiled"}')
+echo "$CONSUME_RESULT" | jq .
+[ "$(echo "$CONSUME_RESULT" | jq -r .consumed)" = "2" ] || { echo "FAIL: expected consumed=2, got $CONSUME_RESULT"; exit 1; }
+REMAINING=$(curl -sf "$BASE/api/stock?product_id=$BULK_PRODUCT_ID" | jq 'length')
+[ "$REMAINING" = "1" ] || { echo "FAIL: expected 1 remaining bulk stock entry after bulk consume, got $REMAINING"; exit 1; }
+SPOILED_LOG_COUNT=$(curl -sf "$BASE/api/consumption-log?reason=spoiled" \
+  | jq --argjson pid "$BULK_PRODUCT_ID" '[.[] | select(.product_id == $pid)] | length')
+[ "$SPOILED_LOG_COUNT" = "2" ] || { echo "FAIL: expected 2 spoiled consumption-log rows for bulk product, got $SPOILED_LOG_COUNT"; exit 1; }
+LOG_UNIT=$(curl -sf "$BASE/api/consumption-log?reason=spoiled" \
+  | jq -r --argjson pid "$BULK_PRODUCT_ID" '[.[] | select(.product_id == $pid)][0].quantity_unit')
+[ "$LOG_UNIT" = "g" ] || { echo "FAIL: expected bulk-consume log quantity_unit=g (snapshotted from product), got $LOG_UNIT"; exit 1; }
+
+echo "== stock/bulk/delete: atomicity check -- one bogus id changes nothing =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/stock/bulk/delete" \
+  -H 'content-type: application/json' \
+  -d '{"entry_ids": ['"$BULK_ID_3"', 999999]}')
+[ "$STATUS" = "404" ] || { echo "FAIL: expected 404 for bulk delete with a bogus id, got $STATUS"; exit 1; }
+REMAINING=$(curl -sf "$BASE/api/stock?product_id=$BULK_PRODUCT_ID" | jq 'length')
+[ "$REMAINING" = "1" ] || { echo "FAIL: expected bulk delete with a bogus id to leave entry $BULK_ID_3 untouched, got $REMAINING remaining"; exit 1; }
+
+echo "== stock/bulk/delete: delete entry 3 (expect it logged as spoiled, matching single delete) =="
+DELETE_RESULT=$(curl -sf -X POST "$BASE/api/stock/bulk/delete" \
+  -H 'content-type: application/json' \
+  -d '{"entry_ids": ['"$BULK_ID_3"']}')
+echo "$DELETE_RESULT" | jq .
+[ "$(echo "$DELETE_RESULT" | jq -r .deleted)" = "1" ] || { echo "FAIL: expected deleted=1, got $DELETE_RESULT"; exit 1; }
+REMAINING=$(curl -sf "$BASE/api/stock?product_id=$BULK_PRODUCT_ID" | jq 'length')
+[ "$REMAINING" = "0" ] || { echo "FAIL: expected 0 remaining bulk stock entries after bulk delete, got $REMAINING"; exit 1; }
+SPOILED_LOG_COUNT=$(curl -sf "$BASE/api/consumption-log?reason=spoiled" \
+  | jq --argjson pid "$BULK_PRODUCT_ID" '[.[] | select(.product_id == $pid)] | length')
+[ "$SPOILED_LOG_COUNT" = "3" ] || { echo "FAIL: expected 3 spoiled consumption-log rows for bulk product (2 consumed + 1 deleted), got $SPOILED_LOG_COUNT"; exit 1; }
+
 echo "OK"
