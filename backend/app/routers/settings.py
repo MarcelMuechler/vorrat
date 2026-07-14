@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import settings as env_settings
@@ -17,8 +18,13 @@ def get_app_settings(db: Session) -> AppSettings:
     if row is None:
         row = AppSettings(id=1, expiring_soon_days=env_settings.expiring_soon_days)
         db.add(row)
-        db.commit()
-        db.refresh(row)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            row = db.get(AppSettings, 1)
+        else:
+            db.refresh(row)
     return row
 
 
