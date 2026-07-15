@@ -75,6 +75,26 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   final _searchController = TextEditingController();
   Timer? _searchDebounce;
 
+  // Selection mode for bulk consume/delete/move (#123). Entered via a
+  // toolbar toggle rather than long-press, since long-press on an item is
+  // already taken by StockItemActions' single-entry delete. Only offered in
+  // the flat/breakdown views (see the AppBar action below) -- the grouped
+  // view aggregates several stock entries into one row and doesn't expose
+  // their individual ids, so there's nothing to select there.
+  bool _selectionMode = false;
+  final Set<int> _selectedIds = {};
+
+  void _enterSelectionMode() => setState(() => _selectionMode = true);
+
+  void _exitSelectionMode() => setState(() {
+    _selectionMode = false;
+    _selectedIds.clear();
+  });
+
+  void _toggleItemSelected(int id) => setState(() {
+    if (!_selectedIds.add(id)) _selectedIds.remove(id);
+  });
+
   @override
   void initState() {
     super.initState();
@@ -128,37 +148,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.stockTitle),
-        actions: [
-          PopupMenuButton<StockViewMode>(
-            icon: const Icon(Icons.view_agenda),
-            tooltip: l10n.viewTooltip,
-            initialValue: stock.viewMode,
-            onSelected: stock.setViewMode,
-            itemBuilder: (context) => [
-              PopupMenuItem(value: StockViewMode.flat, child: Text(l10n.viewModeFlat)),
-              PopupMenuItem(value: StockViewMode.grouped, child: Text(l10n.viewModeGrouped)),
-              PopupMenuItem(value: StockViewMode.breakdown, child: Text(l10n.viewModeBreakdown)),
-            ],
-          ),
-          PopupMenuButton<StockSort>(
-            icon: const Icon(Icons.sort),
-            tooltip: l10n.sortTooltip,
-            initialValue: stock.sort,
-            onSelected: stock.setSort,
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: StockSort.bestBeforeDate,
-                child: Text(l10n.sortBestBeforeDateLabel),
-              ),
-              PopupMenuItem(value: StockSort.name, child: Text(l10n.nameLabel)),
-              PopupMenuItem(value: StockSort.amount, child: Text(l10n.amountFieldLabel)),
-              PopupMenuItem(value: StockSort.location, child: Text(l10n.locationLabel)),
-            ],
-          ),
-        ],
-      ),
+      appBar: _selectionMode ? _buildSelectionAppBar(context, stock, l10n) : _buildDefaultAppBar(stock, l10n),
       body: Column(
         children: [
           Padding(
@@ -244,13 +234,89 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: l10n.addProductManuallyTooltip,
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const ProductDetailScreen()),
+      floatingActionButton: _selectionMode
+          ? null
+          : FloatingActionButton(
+              tooltip: l10n.addProductManuallyTooltip,
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProductDetailScreen()),
+              ),
+              child: const Icon(Icons.add),
+            ),
+    );
+  }
+
+  AppBar _buildDefaultAppBar(StockProvider stock, AppLocalizations l10n) {
+    return AppBar(
+      title: Text(l10n.stockTitle),
+      actions: [
+        // Grouped rows aggregate multiple stock entries with no per-entry
+        // ids exposed (see ProductGroup) -- selection only makes sense in
+        // the flat/breakdown views, which render individual entries.
+        if (stock.viewMode != StockViewMode.grouped && stock.items.isNotEmpty)
+          IconButton(
+            icon: const Icon(Icons.checklist),
+            tooltip: l10n.selectItemsTooltip,
+            onPressed: _enterSelectionMode,
+          ),
+        PopupMenuButton<StockViewMode>(
+          icon: const Icon(Icons.view_agenda),
+          tooltip: l10n.viewTooltip,
+          initialValue: stock.viewMode,
+          onSelected: stock.setViewMode,
+          itemBuilder: (context) => [
+            PopupMenuItem(value: StockViewMode.flat, child: Text(l10n.viewModeFlat)),
+            PopupMenuItem(value: StockViewMode.grouped, child: Text(l10n.viewModeGrouped)),
+            PopupMenuItem(value: StockViewMode.breakdown, child: Text(l10n.viewModeBreakdown)),
+          ],
         ),
-        child: const Icon(Icons.add),
+        PopupMenuButton<StockSort>(
+          icon: const Icon(Icons.sort),
+          tooltip: l10n.sortTooltip,
+          initialValue: stock.sort,
+          onSelected: stock.setSort,
+          itemBuilder: (context) => [
+            PopupMenuItem(value: StockSort.bestBeforeDate, child: Text(l10n.sortBestBeforeDateLabel)),
+            PopupMenuItem(value: StockSort.name, child: Text(l10n.nameLabel)),
+            PopupMenuItem(value: StockSort.amount, child: Text(l10n.amountFieldLabel)),
+            PopupMenuItem(value: StockSort.location, child: Text(l10n.locationLabel)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Replaces the normal AppBar while selecting (#123): shows the current
+  // selection count and the three bulk actions, plus a close button that
+  // exits selection mode and clears the selection with no other side
+  // effects. View/sort switching is deliberately unavailable here -- it's
+  // simpler to just not let the underlying list reshuffle mid-selection.
+  AppBar _buildSelectionAppBar(BuildContext context, StockProvider stock, AppLocalizations l10n) {
+    final hasSelection = _selectedIds.isNotEmpty;
+    return AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        tooltip: l10n.cancelButton,
+        onPressed: _exitSelectionMode,
       ),
+      title: Text(l10n.selectedCount(_selectedIds.length)),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.check_circle_outline),
+          tooltip: l10n.consumeSelectedTooltip,
+          onPressed: hasSelection ? () => _bulkConsume(context, stock) : null,
+        ),
+        IconButton(
+          icon: const Icon(Icons.drive_file_move_outline),
+          tooltip: l10n.moveSelectedTooltip,
+          onPressed: hasSelection ? () => _bulkMove(context, stock) : null,
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete_outline),
+          tooltip: l10n.deleteSelectedTooltip,
+          onPressed: hasSelection ? () => _bulkDelete(context, stock) : null,
+        ),
+      ],
     );
   }
 
@@ -350,20 +416,35 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     );
   }
 
+  Widget _itemSubtitle(BuildContext context, StockItem item) {
+    return Text([
+      if (item.locationName != null) item.locationName!,
+      if (item.bestBeforeDate != null)
+        _relativeLabel(context, item.bestBeforeDate!, _RelativeKind.expiry),
+      if (item.purchasedDate != null)
+        _relativeLabel(context, item.purchasedDate!, _RelativeKind.purchased),
+      if (item.openedAt != null) _relativeLabel(context, item.openedAt!, _RelativeKind.opened),
+      formatAmount(item.amount),
+    ].join(' · '));
+  }
+
   Widget _buildItemTile(BuildContext context, StockProvider stock, StockItem item) {
+    if (_selectionMode) {
+      return CheckboxListTile(
+        key: ValueKey(item.id),
+        value: _selectedIds.contains(item.id),
+        onChanged: (_) => _toggleItemSelected(item.id),
+        controlAffinity: ListTileControlAffinity.leading,
+        secondary: statusDot(context, item.status),
+        title: Text(item.productName),
+        subtitle: _itemSubtitle(context, item),
+      );
+    }
     return StockItemActions(
       key: ValueKey(item.id),
       leading: statusDot(context, item.status),
       title: Text(item.productName),
-      subtitle: Text([
-        if (item.locationName != null) item.locationName!,
-        if (item.bestBeforeDate != null)
-          _relativeLabel(context, item.bestBeforeDate!, _RelativeKind.expiry),
-        if (item.purchasedDate != null)
-          _relativeLabel(context, item.purchasedDate!, _RelativeKind.purchased),
-        if (item.openedAt != null) _relativeLabel(context, item.openedAt!, _RelativeKind.opened),
-        formatAmount(item.amount),
-      ].join(' · ')),
+      subtitle: _itemSubtitle(context, item),
       amount: item.amount,
       productName: item.productName,
       canOpen: item.openedAt == null,
@@ -463,5 +544,98 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
       }
       return false;
     }
+  }
+
+  // Bulk actions (#123) -- each exits selection mode only on success, so a
+  // failure (e.g. a selected entry was already removed elsewhere, tripping
+  // the backend's all-or-nothing check) leaves the selection in place for
+  // the user to retry or adjust instead of silently dropping it.
+  Future<void> _bulkConsume(BuildContext context, StockProvider stock) async {
+    final l10n = AppLocalizations.of(context)!;
+    final ids = _selectedIds.toList();
+    try {
+      final count = await stock.bulkConsume(ids);
+      if (!context.mounted) return;
+      _exitSelectionMode();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.bulkConsumedCount(count))));
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.couldNotBulkConsume('$e'))));
+      }
+    }
+  }
+
+  Future<void> _bulkDelete(BuildContext context, StockProvider stock) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.bulkDeleteConfirmTitle),
+        content: Text(l10n.bulkDeleteConfirm(_selectedIds.length)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancelButton)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.removeButton)),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final ids = _selectedIds.toList();
+    try {
+      final count = await stock.bulkDelete(ids);
+      if (!context.mounted) return;
+      _exitSelectionMode();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.bulkDeletedCount(count))));
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.couldNotBulkDelete('$e'))));
+      }
+    }
+  }
+
+  Future<void> _bulkMove(BuildContext context, StockProvider stock) async {
+    final l10n = AppLocalizations.of(context)!;
+    final locationId = await _promptMoveLocation(context);
+    if (locationId == null || !context.mounted) return;
+    final ids = _selectedIds.toList();
+    try {
+      final count = await stock.bulkMove(ids, locationId);
+      if (!context.mounted) return;
+      _exitSelectionMode();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.bulkMovedCount(count))));
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.couldNotBulkMove('$e'))));
+      }
+    }
+  }
+
+  // Location picker for bulk move -- same DropdownButtonFormField pattern
+  // AddBatchSheet uses for a single new batch's location, just wrapped in a
+  // dialog instead of a bottom sheet since there's no other field to show
+  // alongside it. Reuses _locations, already loaded for the filter row.
+  Future<int?> _promptMoveLocation(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    int? selected = _locations.isNotEmpty ? _locations.first.id : null;
+    return showDialog<int>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(l10n.moveToLocationTitle),
+          content: DropdownButtonFormField<int>(
+            initialValue: selected,
+            decoration: InputDecoration(labelText: l10n.locationLabel, border: const OutlineInputBorder()),
+            items: [for (final l in _locations) DropdownMenuItem(value: l.id, child: Text(l.name))],
+            onChanged: (value) => setDialogState(() => selected = value),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
+            FilledButton(
+              onPressed: selected == null ? null : () => Navigator.pop(context, selected),
+              child: Text(l10n.moveButton),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
