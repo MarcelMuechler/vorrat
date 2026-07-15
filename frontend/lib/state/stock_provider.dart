@@ -228,4 +228,27 @@ class StockProvider extends ChangeNotifier {
     await api.undoConsumeStock(consumptionLogId, item, amount);
     await refresh();
   }
+
+  /// Bulk counterparts of [consume]/[delete] for the Stock screen's
+  /// selection mode (#123) -- each just forwards to the already-merged
+  /// all-or-nothing bulk endpoint and refreshes, same shape as the
+  /// single-entry methods above. Returns the count the backend reports
+  /// acted on.
+  Future<int> bulkConsume(List<int> ids, {String reason = 'used'}) async {
+    final count = await api.bulkConsumeStock(ids, reason: reason);
+    await refresh();
+    return count;
+  }
+
+  Future<int> bulkDelete(List<int> ids) async {
+    final count = await api.bulkDeleteStock(ids);
+    await refresh();
+    return count;
+  }
+
+  Future<int> bulkMove(List<int> ids, int locationId) async {
+    final count = await api.bulkMoveStock(ids, locationId);
+    await refresh();
+    return count;
+  }
 }
