@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.16.1](https://github.com/MarcelMuechler/Vorrat/compare/v0.16.0...v0.16.1) (2026-07-15)
+
+
+### Bug Fixes
+
+* **backend:** no-cache static assets so add-on updates don't need a hard reload ([#179](https://github.com/MarcelMuechler/Vorrat/issues/179)) ([18d45b5](https://github.com/MarcelMuechler/Vorrat/commit/18d45b58be6bcb8aaace98b2fe5b02efa164bc2a))
+* **frontend:** auto-dismiss Undo SnackBars instead of staying open forever ([#178](https://github.com/MarcelMuechler/Vorrat/issues/178)) ([8d7fa22](https://github.com/MarcelMuechler/Vorrat/commit/8d7fa22c458fc644e20b226527e3da88d8cd6129))
+* **frontend:** visual polish pass for empty states, filter rows, and dark theme ([ce31809](https://github.com/MarcelMuechler/Vorrat/commit/ce31809e7fcf625a793f975c81698ededbd653c0)), closes [#199](https://github.com/MarcelMuechler/Vorrat/issues/199)
+
 ## [0.16.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.15.0...v0.16.0) (2026-07-15)
 
 
