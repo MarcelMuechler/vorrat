@@ -831,4 +831,95 @@ class AppLocalizationsDe extends AppLocalizations {
   String couldNotClearDone(Object error) {
     return 'Erledigte Artikel konnten nicht entfernt werden: $error';
   }
+
+  @override
+  String get selectItemsTooltip => 'Artikel auswählen';
+
+  @override
+  String selectedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ausgewählt',
+      one: '1 ausgewählt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get consumeSelectedTooltip => 'Auswahl verbrauchen';
+
+  @override
+  String get deleteSelectedTooltip => 'Auswahl löschen';
+
+  @override
+  String get moveSelectedTooltip => 'Auswahl verschieben';
+
+  @override
+  String get moveButton => 'Verschieben';
+
+  @override
+  String get moveToLocationTitle => 'An Standort verschieben';
+
+  @override
+  String get bulkDeleteConfirmTitle => 'Ausgewählte Chargen entfernen?';
+
+  @override
+  String bulkDeleteConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Dies löscht $count ausgewählte Chargen.',
+      one: 'Dies löscht 1 ausgewählte Charge.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bulkConsumedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Chargen verbraucht.',
+      one: '1 Charge verbraucht.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bulkDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Chargen gelöscht.',
+      one: '1 Charge gelöscht.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bulkMovedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Chargen verschoben.',
+      one: '1 Charge verschoben.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String couldNotBulkConsume(String error) {
+    return 'Auswahl konnte nicht verbraucht werden: $error';
+  }
+
+  @override
+  String couldNotBulkDelete(String error) {
+    return 'Auswahl konnte nicht gelöscht werden: $error';
+  }
+
+  @override
+  String couldNotBulkMove(String error) {
+    return 'Auswahl konnte nicht verschoben werden: $error';
+  }
 }

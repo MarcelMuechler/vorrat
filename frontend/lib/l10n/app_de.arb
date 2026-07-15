@@ -223,5 +223,21 @@
   "couldNotAddLowStock": "Artikel mit niedrigem Bestand konnten nicht hinzugefügt werden: {error}",
   "clearDoneTooltip": "Erledigte entfernen",
   "clearedDoneCount": "{count, plural, =0{Nichts zu entfernen.} =1{1 Artikel entfernt.} other{{count} Artikel entfernt.}}",
-  "couldNotClearDone": "Erledigte Artikel konnten nicht entfernt werden: {error}"
+  "couldNotClearDone": "Erledigte Artikel konnten nicht entfernt werden: {error}",
+
+  "selectItemsTooltip": "Artikel auswählen",
+  "selectedCount": "{count, plural, =1{1 ausgewählt} other{{count} ausgewählt}}",
+  "consumeSelectedTooltip": "Auswahl verbrauchen",
+  "deleteSelectedTooltip": "Auswahl löschen",
+  "moveSelectedTooltip": "Auswahl verschieben",
+  "moveButton": "Verschieben",
+  "moveToLocationTitle": "An Standort verschieben",
+  "bulkDeleteConfirmTitle": "Ausgewählte Chargen entfernen?",
+  "bulkDeleteConfirm": "{count, plural, =1{Dies löscht 1 ausgewählte Charge.} other{Dies löscht {count} ausgewählte Chargen.}}",
+  "bulkConsumedCount": "{count, plural, =1{1 Charge verbraucht.} other{{count} Chargen verbraucht.}}",
+  "bulkDeletedCount": "{count, plural, =1{1 Charge gelöscht.} other{{count} Chargen gelöscht.}}",
+  "bulkMovedCount": "{count, plural, =1{1 Charge verschoben.} other{{count} Chargen verschoben.}}",
+  "couldNotBulkConsume": "Auswahl konnte nicht verbraucht werden: {error}",
+  "couldNotBulkDelete": "Auswahl konnte nicht gelöscht werden: {error}",
+  "couldNotBulkMove": "Auswahl konnte nicht verschoben werden: {error}"
 }

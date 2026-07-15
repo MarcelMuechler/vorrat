@@ -412,5 +412,45 @@
   "@clearedDoneCount": {
     "placeholders": { "count": { "type": "int" } }
   },
-  "couldNotClearDone": "Could not clear done items: {error}"
+  "couldNotClearDone": "Could not clear done items: {error}",
+
+  "selectItemsTooltip": "Select items",
+  "selectedCount": "{count, plural, =1{1 selected} other{{count} selected}}",
+  "@selectedCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "consumeSelectedTooltip": "Consume selected",
+  "deleteSelectedTooltip": "Delete selected",
+  "moveSelectedTooltip": "Move selected",
+  "moveButton": "Move",
+  "moveToLocationTitle": "Move to location",
+  "bulkDeleteConfirmTitle": "Remove selected batches?",
+  "bulkDeleteConfirm": "{count, plural, =1{This deletes 1 selected batch.} other{This deletes {count} selected batches.}}",
+  "@bulkDeleteConfirm": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "bulkConsumedCount": "{count, plural, =1{Consumed 1 batch.} other{Consumed {count} batches.}}",
+  "@bulkConsumedCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "bulkDeletedCount": "{count, plural, =1{Deleted 1 batch.} other{Deleted {count} batches.}}",
+  "@bulkDeletedCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "bulkMovedCount": "{count, plural, =1{Moved 1 batch.} other{Moved {count} batches.}}",
+  "@bulkMovedCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "couldNotBulkConsume": "Could not consume selected items: {error}",
+  "@couldNotBulkConsume": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "couldNotBulkDelete": "Could not delete selected items: {error}",
+  "@couldNotBulkDelete": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "couldNotBulkMove": "Could not move selected items: {error}",
+  "@couldNotBulkMove": {
+    "placeholders": { "error": { "type": "String" } }
+  }
 }

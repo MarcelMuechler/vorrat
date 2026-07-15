@@ -823,4 +823,95 @@ class AppLocalizationsEn extends AppLocalizations {
   String couldNotClearDone(Object error) {
     return 'Could not clear done items: $error';
   }
+
+  @override
+  String get selectItemsTooltip => 'Select items';
+
+  @override
+  String selectedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count selected',
+      one: '1 selected',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get consumeSelectedTooltip => 'Consume selected';
+
+  @override
+  String get deleteSelectedTooltip => 'Delete selected';
+
+  @override
+  String get moveSelectedTooltip => 'Move selected';
+
+  @override
+  String get moveButton => 'Move';
+
+  @override
+  String get moveToLocationTitle => 'Move to location';
+
+  @override
+  String get bulkDeleteConfirmTitle => 'Remove selected batches?';
+
+  @override
+  String bulkDeleteConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'This deletes $count selected batches.',
+      one: 'This deletes 1 selected batch.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bulkConsumedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Consumed $count batches.',
+      one: 'Consumed 1 batch.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bulkDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Deleted $count batches.',
+      one: 'Deleted 1 batch.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bulkMovedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Moved $count batches.',
+      one: 'Moved 1 batch.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String couldNotBulkConsume(String error) {
+    return 'Could not consume selected items: $error';
+  }
+
+  @override
+  String couldNotBulkDelete(String error) {
+    return 'Could not delete selected items: $error';
+  }
+
+  @override
+  String couldNotBulkMove(String error) {
+    return 'Could not move selected items: $error';
+  }
 }

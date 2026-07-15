@@ -1351,6 +1351,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not clear done items: {error}'**
   String couldNotClearDone(Object error);
+
+  /// No description provided for @selectItemsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Select items'**
+  String get selectItemsTooltip;
+
+  /// No description provided for @selectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 selected} other{{count} selected}}'**
+  String selectedCount(int count);
+
+  /// No description provided for @consumeSelectedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Consume selected'**
+  String get consumeSelectedTooltip;
+
+  /// No description provided for @deleteSelectedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected'**
+  String get deleteSelectedTooltip;
+
+  /// No description provided for @moveSelectedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Move selected'**
+  String get moveSelectedTooltip;
+
+  /// No description provided for @moveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Move'**
+  String get moveButton;
+
+  /// No description provided for @moveToLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to location'**
+  String get moveToLocationTitle;
+
+  /// No description provided for @bulkDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove selected batches?'**
+  String get bulkDeleteConfirmTitle;
+
+  /// No description provided for @bulkDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{This deletes 1 selected batch.} other{This deletes {count} selected batches.}}'**
+  String bulkDeleteConfirm(int count);
+
+  /// No description provided for @bulkConsumedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Consumed 1 batch.} other{Consumed {count} batches.}}'**
+  String bulkConsumedCount(int count);
+
+  /// No description provided for @bulkDeletedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Deleted 1 batch.} other{Deleted {count} batches.}}'**
+  String bulkDeletedCount(int count);
+
+  /// No description provided for @bulkMovedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Moved 1 batch.} other{Moved {count} batches.}}'**
+  String bulkMovedCount(int count);
+
+  /// No description provided for @couldNotBulkConsume.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not consume selected items: {error}'**
+  String couldNotBulkConsume(String error);
+
+  /// No description provided for @couldNotBulkDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete selected items: {error}'**
+  String couldNotBulkDelete(String error);
+
+  /// No description provided for @couldNotBulkMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not move selected items: {error}'**
+  String couldNotBulkMove(String error);
 }
 
 class _AppLocalizationsDelegate
