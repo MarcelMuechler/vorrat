@@ -498,6 +498,9 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
           label: l10n.undoButton,
           onPressed: () => _undoConsume(context, stock, item, amount, consumptionLogId),
         ),
+        // A SnackBar with an action defaults to `persist: true` (stays until
+        // manually dismissed) -- opt back into the normal timeout (#178).
+        persist: false,
       ),
     );
   }

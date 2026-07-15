@@ -135,6 +135,9 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       SnackBar(
         content: Text(l10n.shoppingListItemDeleted(item.name)),
         action: SnackBarAction(label: l10n.undoButton, onPressed: () => _undoDelete(item)),
+        // A SnackBar with an action defaults to `persist: true` (stays until
+        // manually dismissed) -- opt back into the normal timeout (#178).
+        persist: false,
       ),
     );
   }

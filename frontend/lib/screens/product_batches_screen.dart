@@ -87,6 +87,9 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
           label: l10n.undoButton,
           onPressed: () => _undoConsume(item, amount, consumptionLogId),
         ),
+        // A SnackBar with an action defaults to `persist: true` (stays until
+        // manually dismissed) -- opt back into the normal timeout (#178).
+        persist: false,
       ),
     );
   }
