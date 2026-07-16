@@ -174,6 +174,22 @@ class ApiClient {
     _checkOk(res);
   }
 
+  /// Adds an alternate/extra scannable code for this product (#208) -- e.g.
+  /// a different pack size or a regional/reprinted barcode -- so a later
+  /// [lookupBarcode] on that code resolves to this same product instead of
+  /// offering to create a duplicate. Throws [ApiException] (409) if the code
+  /// is already used as this or another product's barcode.
+  Future<Product> addProductBarcode(int id, String code) async {
+    final res = await _postJson('/api/products/$id/barcodes', {'code': code});
+    return Product.fromJson(jsonDecode(res.body));
+  }
+
+  Future<Product> removeProductBarcode(int id, String code) async {
+    final res = await http.delete(_uri('/api/products/$id/barcodes/${Uri.encodeComponent(code)}'));
+    _checkOk(res);
+    return Product.fromJson(jsonDecode(res.body));
+  }
+
   /// Re-fetches this product's Open Food Facts listing (bypassing the
   /// local-DB-first check [lookupBarcode] does) for the caller to review
   /// and apply via [updateProduct].

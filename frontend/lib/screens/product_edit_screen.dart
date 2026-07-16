@@ -35,6 +35,9 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   bool _refreshingFromOff = false;
   late String? _barcode;
   bool _generatingQrLabel = false;
+  late List<String> _extraBarcodes;
+  late final TextEditingController _newBarcodeController;
+  bool _barcodeBusy = false;
 
   /// A synthetic `VORRAT-<id>` label (#105) has no manufacturer entry on
   /// Open Food Facts to refresh from -- only offer that action for a real
@@ -64,6 +67,8 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     );
     _selectedLocationId = p.defaultLocationId;
     _imageUrl = p.imageUrl;
+    _extraBarcodes = List<String>.from(p.extraBarcodes);
+    _newBarcodeController = TextEditingController();
     _loadLocations();
   }
 
@@ -74,6 +79,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     _openShelfLifeDaysController.dispose();
     _lowStockThresholdController.dispose();
     _targetStockLevelController.dispose();
+    _newBarcodeController.dispose();
     super.dispose();
   }
 
@@ -208,6 +214,52 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     );
   }
 
+  /// Adds whatever's currently typed in [_newBarcodeController] as an
+  /// alternate/extra scannable code for this product (#208) -- e.g. a
+  /// different pack size or a regional/reprinted barcode -- so scanning it
+  /// later resolves to this product instead of offering to create a
+  /// duplicate.
+  Future<void> _addExtraBarcode() async {
+    final code = _newBarcodeController.text.trim();
+    if (code.isEmpty) return;
+    setState(() => _barcodeBusy = true);
+    final api = context.read<ApiClient>();
+    try {
+      final updated = await api.addProductBarcode(widget.product.id, code);
+      if (!mounted) return;
+      setState(() {
+        _extraBarcodes = updated.extraBarcodes;
+        _newBarcodeController.clear();
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.couldNotSave('$e'))));
+      }
+    } finally {
+      if (mounted) setState(() => _barcodeBusy = false);
+    }
+  }
+
+  Future<void> _removeExtraBarcode(String code) async {
+    setState(() => _barcodeBusy = true);
+    final api = context.read<ApiClient>();
+    try {
+      final updated = await api.removeProductBarcode(widget.product.id, code);
+      if (!mounted) return;
+      setState(() => _extraBarcodes = updated.extraBarcodes);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.couldNotSave('$e'))));
+      }
+    } finally {
+      if (mounted) setState(() => _barcodeBusy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -252,6 +304,43 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                 TextField(
                   controller: _nameController,
                   decoration: InputDecoration(labelText: l10n.nameLabel),
+                ),
+                const SizedBox(height: 12),
+                Text(l10n.extraBarcodesLabel, style: Theme.of(context).textTheme.labelLarge),
+                Text(l10n.extraBarcodesHint, style: Theme.of(context).textTheme.bodySmall),
+                const SizedBox(height: 8),
+                if (_extraBarcodes.isNotEmpty)
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      for (final code in _extraBarcodes)
+                        Chip(
+                          label: Text(code),
+                          onDeleted: _barcodeBusy ? null : () => _removeExtraBarcode(code),
+                          deleteButtonTooltipMessage: l10n.removeBarcodeTooltip,
+                        ),
+                    ],
+                  ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _newBarcodeController,
+                        decoration: InputDecoration(labelText: l10n.addBarcodeTooltip),
+                        onSubmitted: (_) {
+                          if (!_barcodeBusy) _addExtraBarcode();
+                        },
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      tooltip: l10n.addBarcodeTooltip,
+                      onPressed: _barcodeBusy ? null : _addExtraBarcode,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 CategoryField(

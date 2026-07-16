@@ -53,10 +53,38 @@ class Product(Base):
 
     default_location: Mapped[Location | None] = relationship()
     category: Mapped[Category | None] = relationship()
+    # Extra scannable codes for this product (#208) -- alternate pack sizes
+    # or regional/reprinted barcodes for the same physical item, beyond the
+    # single `barcode` column above. Cascade-deleted with the product: unlike
+    # StockEntry (blocked) or ShoppingListItem/ConsumptionLog (detached/bulk
+    # deleted) in delete_product, these are pure lookup aliases with no
+    # standalone meaning once the product is gone.
+    barcodes: Mapped[list["ProductBarcode"]] = relationship(
+        cascade="all, delete-orphan", order_by="ProductBarcode.id"
+    )
 
     @property
     def category_name(self) -> str | None:
         return self.category.name if self.category else None
+
+    @property
+    def extra_barcodes(self) -> list[str]:
+        return [b.code for b in self.barcodes]
+
+
+class ProductBarcode(Base):
+    """A child table (#208) rather than widening `Product.barcode` to a list
+    column -- lets barcode.py's local-DB-first lookup match a scan against
+    any of a product's codes with a plain query, and keeps the single
+    "canonical" barcode column and its existing unique constraint/QR-label
+    behavior (product_edit_screen.dart's VORRAT-<id> synthetic label) intact."""
+
+    __tablename__ = "product_barcodes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    code: Mapped[str] = mapped_column(String, unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
 class AppSettings(Base):

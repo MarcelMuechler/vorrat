@@ -467,6 +467,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'e.g. 5 — add-low-stock restocks up to this amount instead of just 1';
 
   @override
+  String get extraBarcodesLabel => 'Alternate barcodes';
+
+  @override
+  String get extraBarcodesHint =>
+      'Other codes (e.g. a different pack size) that should also scan to this product';
+
+  @override
+  String get addBarcodeTooltip => 'Add barcode';
+
+  @override
+  String get removeBarcodeTooltip => 'Remove barcode';
+
+  @override
   String get deleteProductTitle => 'Delete product?';
 
   @override

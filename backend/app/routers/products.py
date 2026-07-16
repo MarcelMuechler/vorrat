@@ -3,9 +3,17 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.db import get_db
-from app.models import Category, ConsumptionLog, Location, Product, ShoppingListItem, StockEntry
+from app.models import (
+    Category,
+    ConsumptionLog,
+    Location,
+    Product,
+    ProductBarcode,
+    ShoppingListItem,
+    StockEntry,
+)
 from app.off_client import lookup_off
-from app.schemas import ProductCreate, ProductRead, ProductUpdate
+from app.schemas import ProductBarcodeCreate, ProductCreate, ProductRead, ProductUpdate
 from app.utils import escape_like, normalize_barcode
 
 router = APIRouter(prefix="/api/products", tags=["products"])
@@ -79,6 +87,46 @@ def update_product(product_id: int, payload: ProductUpdate, db: Session = Depend
     except IntegrityError:
         db.rollback()
         raise HTTPException(409, "A product with this barcode already exists")
+    db.refresh(product)
+    return product
+
+
+@router.post("/{product_id}/barcodes", response_model=ProductRead, status_code=201)
+def add_product_barcode(product_id: int, payload: ProductBarcodeCreate, db: Session = Depends(get_db)):
+    """Adds an alternate/extra scannable code for this product (#208) --
+    e.g. a different pack size or a regional/reprinted barcode -- so
+    /api/barcode/{code} resolves it to this same product instead of falling
+    through to the Open Food Facts "create a new product" flow."""
+    product = db.get(Product, product_id)
+    if not product:
+        raise HTTPException(404, "Product not found")
+    if product.barcode == payload.code:
+        raise HTTPException(409, "A product with this barcode already exists")
+    db.add(ProductBarcode(product_id=product_id, code=payload.code))
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "A product with this barcode already exists")
+    db.refresh(product)
+    return product
+
+
+@router.delete("/{product_id}/barcodes/{code}", response_model=ProductRead)
+def remove_product_barcode(product_id: int, code: str, db: Session = Depends(get_db)):
+    product = db.get(Product, product_id)
+    if not product:
+        raise HTTPException(404, "Product not found")
+    code = normalize_barcode(code) or code
+    barcode_row = (
+        db.query(ProductBarcode)
+        .filter(ProductBarcode.product_id == product_id, ProductBarcode.code == code)
+        .first()
+    )
+    if not barcode_row:
+        raise HTTPException(404, "Barcode not found for this product")
+    db.delete(barcode_row)
+    db.commit()
     db.refresh(product)
     return product
 

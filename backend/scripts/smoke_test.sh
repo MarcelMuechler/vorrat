@@ -72,6 +72,37 @@ STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/api/products/$OT
 [ "$STATUS" = "409" ] || { echo "FAIL: expected 409 patching product to a duplicate barcode, got $STATUS"; exit 1; }
 curl -sf -o /dev/null -X DELETE "$BASE/api/products/$OTHER_PRODUCT_ID"
 
+echo "== products/barcodes: add an alternate barcode (#208) =="
+curl -sf -X POST "$BASE/api/products/$PRODUCT_ID/barcodes" \
+  -H 'content-type: application/json' \
+  -d '{"code": "9998887776665"}' | jq .
+EXTRA_BARCODES=$(curl -sf "$BASE/api/products/$PRODUCT_ID" | jq -r '.extra_barcodes | join(",")')
+[ "$EXTRA_BARCODES" = "9998887776665" ] || { echo "FAIL: expected extra_barcodes to include 9998887776665, got $EXTRA_BARCODES"; exit 1; }
+
+echo "== barcode: lookup by the alternate code resolves to the same product, not a duplicate (#208) =="
+LOOKUP=$(curl -sf "$BASE/api/barcode/9998887776665")
+echo "$LOOKUP" | jq .
+[ "$(echo "$LOOKUP" | jq -r .source)" = "local" ] || { echo "FAIL: expected source local for alternate barcode lookup"; exit 1; }
+[ "$(echo "$LOOKUP" | jq -r .product.id)" = "$PRODUCT_ID" ] || { echo "FAIL: expected alternate barcode lookup to resolve to product $PRODUCT_ID"; exit 1; }
+
+echo "== products/barcodes: adding a code that duplicates another product's barcode (expect 409 not 500) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/products/$PRODUCT_ID/barcodes" \
+  -H 'content-type: application/json' -d '{"code": "1234567890123"}')
+[ "$STATUS" = "409" ] || { echo "FAIL: expected 409 adding an extra barcode that duplicates the primary barcode, got $STATUS"; exit 1; }
+
+echo "== products/barcodes: removing an unknown code (expect 404 not 500) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$BASE/api/products/$PRODUCT_ID/barcodes/0000000000000")
+[ "$STATUS" = "404" ] || { echo "FAIL: expected 404 removing an unknown extra barcode, got $STATUS"; exit 1; }
+
+echo "== products/barcodes: remove the alternate barcode =="
+curl -sf -X DELETE "$BASE/api/products/$PRODUCT_ID/barcodes/9998887776665" | jq .
+EXTRA_BARCODES=$(curl -sf "$BASE/api/products/$PRODUCT_ID" | jq -r '.extra_barcodes | length')
+[ "$EXTRA_BARCODES" = "0" ] || { echo "FAIL: expected extra_barcodes to be empty after removal, got $EXTRA_BARCODES"; exit 1; }
+
+echo "== barcode: the removed alternate code no longer resolves locally (expect source none, 404) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/barcode/9998887776665")
+[ "$STATUS" = "404" ] || { echo "FAIL: expected 404 looking up a removed alternate barcode, got $STATUS"; exit 1; }
+
 PAST_DATE=$(date -d "yesterday" +%Y-%m-%d 2>/dev/null || date -v-1d +%Y-%m-%d)
 SOON_DATE=$(date -d "+2 days" +%Y-%m-%d 2>/dev/null || date -v+2d +%Y-%m-%d)
 FAR_DATE=$(date -d "+30 days" +%Y-%m-%d 2>/dev/null || date -v+30d +%Y-%m-%d)

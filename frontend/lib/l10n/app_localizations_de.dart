@@ -469,6 +469,19 @@ class AppLocalizationsDe extends AppLocalizations {
       'z. B. 5 — beim Auffüllen der Einkaufsliste wird bis zu dieser Menge statt nur 1 aufgefüllt';
 
   @override
+  String get extraBarcodesLabel => 'Alternative Barcodes';
+
+  @override
+  String get extraBarcodesHint =>
+      'Weitere Codes (z. B. eine andere Packungsgröße), die ebenfalls zu diesem Produkt gescannt werden sollen';
+
+  @override
+  String get addBarcodeTooltip => 'Barcode hinzufügen';
+
+  @override
+  String get removeBarcodeTooltip => 'Barcode entfernen';
+
+  @override
   String get deleteProductTitle => 'Produkt löschen?';
 
   @override
