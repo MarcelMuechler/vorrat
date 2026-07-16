@@ -13,6 +13,9 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       # Uses the default GITHUB_TOKEN, which keeps this working with zero
       # setup. Trade-off: pushes/tags made with GITHUB_TOKEN don't trigger
@@ -112,3 +115,32 @@ jobs:
             git commit -m "chore: bump to $TAG_NAME"
             git push
           fi
+
+  # Builds the Flutter Android app and attaches the APK to the GitHub Release
+  # release-please just cut, so it's downloadable from the repo's Releases
+  # page without anyone needing a local Flutter toolchain.
+  #
+  # ponytail: no android/key.properties secret is configured, so
+  # build.gradle.kts's release buildType falls back to the Flutter debug
+  # signing key (see build.gradle.kts comment). The APK installs and runs
+  # fine for sideloading, but isn't signed for Play Store distribution or
+  # verifiable upgrades across devices. Add a release keystore + CI secrets
+  # (KEYSTORE_BASE64/KEYSTORE_PASSWORD/KEY_ALIAS/KEY_PASSWORD, decoded into
+  # android/key.properties before the build step) if that's ever needed.
+  build-apk:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - working-directory: frontend
+        run: flutter build apk --release
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ needs.release-please.outputs.tag_name }}
+        run: gh release upload "$TAG_NAME" frontend/build/app/outputs/flutter-apk/app-release.apk
