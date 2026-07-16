@@ -97,7 +97,12 @@ class ShoppingListItem(Base):
     is left to the API layer (the create schema's model_validator, and the
     PATCH route re-checking the merged result) rather than a DB constraint,
     matching how validation elsewhere in this codebase favors the API layer
-    over SQLite CHECK constraints."""
+    over SQLite CHECK constraints.
+
+    category_id (#122) is only meaningful for free-text items -- a
+    product-linked item already has a category via product.category, so the
+    API layer rejects setting both at once rather than letting one silently
+    shadow the other."""
 
     __tablename__ = "shopping_list_items"
 
@@ -107,9 +112,21 @@ class ShoppingListItem(Base):
     amount: Mapped[float] = mapped_column(Float, default=1)
     unit: Mapped[str | None] = mapped_column(String, nullable=True)
     done: Mapped[bool] = mapped_column(Boolean, default=False)
+    category_id: Mapped[int | None] = mapped_column(ForeignKey("categories.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     product: Mapped[Product | None] = relationship()
+    category: Mapped[Category | None] = relationship()
+
+    @property
+    def category_name(self) -> str | None:
+        # A free-text item's own category wins; a product-linked item
+        # without one of its own falls back to the product's category, so
+        # existing product-linked grouping/display isn't disrupted by this
+        # column's addition.
+        if self.category:
+            return self.category.name
+        return self.product.category_name if self.product else None
 
 
 class ConsumptionLog(Base):

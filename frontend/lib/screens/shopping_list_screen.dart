@@ -7,6 +7,7 @@ import '../models/models.dart';
 import '../util/format.dart';
 import '../state/stock_provider.dart';
 import '../util/status.dart';
+import '../widgets/edit_shopping_list_item_sheet.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/undo_snackbar.dart';
 
@@ -146,6 +147,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   // open items first), so its position in the list may differ from before
   // the swipe, and a product-linked item's amount/unit are re-sent
   // explicitly even though they were originally inherited from the product.
+  // categoryId is only ever non-null on a free-text item (#122), so passing
+  // it through unconditionally is safe for product-linked items too.
   Future<void> _undoDelete(ShoppingListItem item) async {
     try {
       final api = context.read<ApiClient>();
@@ -154,6 +157,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         name: item.productId == null ? item.name : null,
         amount: item.amount,
         unit: item.unit,
+        categoryId: item.categoryId,
       );
       if (item.done) {
         await api.updateShoppingListItem(restored.id, {'done': true});
@@ -184,6 +188,15 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         ).showSnackBar(SnackBar(content: Text(l10n.couldNotAddLowStock('$e'))));
       }
     }
+  }
+
+  // Only free-text items get an edit sheet -- a product-linked item's
+  // name/unit come from the Product, and it can't have its own category
+  // either (the backend rejects category_id alongside product_id), so
+  // there's nothing on it for this form to edit.
+  Future<void> _editItem(ShoppingListItem item) async {
+    final updated = await EditShoppingListItemSheet.show(context, item);
+    if (updated == true) await _refresh();
   }
 
   Future<void> _clearDone() async {
@@ -379,10 +392,22 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
       confirmDismiss: (_) => _delete(item),
-      child: CheckboxListTile(
-        controlAffinity: ListTileControlAffinity.leading,
-        value: item.done,
-        onChanged: (_) => _toggleDone(item),
+      // A plain ListTile, not CheckboxListTile -- CheckboxListTile merges its
+      // *entire* row (including `secondary`) into one semantics node whose
+      // only action is the checkbox toggle, which would swallow taps meant
+      // for the edit button below and always toggle done instead. Wiring the
+      // Checkbox explicitly as `leading` keeps it (and the trailing edit
+      // button) as independent, individually tappable controls.
+      child: ListTile(
+        onTap: () => _toggleDone(item),
+        leading: Checkbox(value: item.done, onChanged: (_) => _toggleDone(item)),
+        trailing: item.productId == null
+            ? IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                tooltip: l10n.editItemTooltip,
+                onPressed: () => _editItem(item),
+              )
+            : null,
         title: Row(
           children: [
             Flexible(
@@ -397,6 +422,15 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
               const SizedBox(width: 8),
               Chip(
                 label: Text(l10n.fromStockTag),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                labelStyle: Theme.of(context).textTheme.labelSmall,
+              ),
+            ],
+            if (item.categoryName != null) ...[
+              const SizedBox(width: 8),
+              Chip(
+                label: Text(item.categoryName!),
                 visualDensity: VisualDensity.compact,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 labelStyle: Theme.of(context).textTheme.labelSmall,
