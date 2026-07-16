@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.18.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.17.1...v0.18.0) (2026-07-16)
+
+
+### Features
+
+* **backend:** add optional price tracking to stock entries ([742e294](https://github.com/MarcelMuechler/Vorrat/commit/742e294db5bc5608f6e3b81888ca42f4e3925046)), closes [#126](https://github.com/MarcelMuechler/Vorrat/issues/126)
+* **shopping-list:** allow categorizing free-text shopping list items ([430afd1](https://github.com/MarcelMuechler/Vorrat/commit/430afd10e65ace4ffbbddb7f867ead6e529e6e2d))
+* support multiple barcodes per product ([23b4224](https://github.com/MarcelMuechler/Vorrat/commit/23b42245b721e63f60ee1cdfe58c6238b4df23c0)), closes [#208](https://github.com/MarcelMuechler/Vorrat/issues/208)
+
+
+### Bug Fixes
+
+* **frontend:** guide native users to Settings when no server URL is set ([421b108](https://github.com/MarcelMuechler/Vorrat/commit/421b108e1dc3657f07acceb33871de06674f5d77))
+* **frontend:** style SnackBars to match the app's light/dark theme ([d85ec87](https://github.com/MarcelMuechler/Vorrat/commit/d85ec8787bfc685624922bff9240602a8809ae68))
+* **frontend:** update scan_mode_test for the new price field ([9b6cffc](https://github.com/MarcelMuechler/Vorrat/commit/9b6cffcce35752dde175bf312d8ec40973d2f519))
+
 ## [0.17.1](https://github.com/MarcelMuechler/Vorrat/compare/v0.17.0...v0.17.1) (2026-07-15)
 
 
