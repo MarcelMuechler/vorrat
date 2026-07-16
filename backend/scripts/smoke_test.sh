@@ -209,6 +209,56 @@ STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/shopping-list
   -H 'content-type: application/json' -d '{"product_id": 999999}')
 [ "$STATUS" = "404" ] || { echo "FAIL: expected 404 creating item with unknown product_id, got $STATUS"; exit 1; }
 
+echo "== categories: create a second category for free-text shopping list items (#122) =="
+SHOPPING_CATEGORY_ID=$(curl -sf -X POST "$BASE/api/categories" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Party Supplies"}' | jq -r .id)
+echo "created category $SHOPPING_CATEGORY_ID"
+
+echo "== shopping-list: create free-text item with category_id =="
+CATEGORIZED_ITEM=$(curl -sf -X POST "$BASE/api/shopping-list" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Balloons", "category_id": '"$SHOPPING_CATEGORY_ID"'}')
+echo "$CATEGORIZED_ITEM"
+CATEGORIZED_ITEM_ID=$(echo "$CATEGORIZED_ITEM" | jq -r .id)
+[ "$(echo "$CATEGORIZED_ITEM" | jq -r .category_id)" = "$SHOPPING_CATEGORY_ID" ] \
+  || { echo "FAIL: expected category_id $SHOPPING_CATEGORY_ID on created item, got $CATEGORIZED_ITEM"; exit 1; }
+[ "$(echo "$CATEGORIZED_ITEM" | jq -r .category_name)" = "Party Supplies" ] \
+  || { echo "FAIL: expected category_name 'Party Supplies' on created item, got $CATEGORIZED_ITEM"; exit 1; }
+
+echo "== shopping-list: category_id round-trips via GET =="
+FETCHED=$(curl -sf "$BASE/api/shopping-list" | jq -c --argjson id "$CATEGORIZED_ITEM_ID" '.[] | select(.id == $id)')
+[ "$(echo "$FETCHED" | jq -r .category_id)" = "$SHOPPING_CATEGORY_ID" ] \
+  || { echo "FAIL: expected category_id to persist across GET, got $FETCHED"; exit 1; }
+[ "$(echo "$FETCHED" | jq -r .category_name)" = "Party Supplies" ] \
+  || { echo "FAIL: expected category_name to persist across GET, got $FETCHED"; exit 1; }
+
+echo "== shopping-list: create with unknown category_id (expect 404) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/shopping-list" \
+  -H 'content-type: application/json' -d '{"name": "Streamers", "category_id": 999999}')
+[ "$STATUS" = "404" ] || { echo "FAIL: expected 404 creating item with unknown category_id, got $STATUS"; exit 1; }
+
+echo "== shopping-list: create with both product_id and category_id (expect 422) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/shopping-list" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$PRODUCT_ID"', "category_id": '"$SHOPPING_CATEGORY_ID"'}')
+[ "$STATUS" = "422" ] || { echo "FAIL: expected 422 creating product-linked item with category_id, got $STATUS"; exit 1; }
+
+echo "== shopping-list: product-linked item resolves category_name from its product (no category_id of its own) =="
+PRODUCT_LINKED=$(curl -sf "$BASE/api/shopping-list" | jq -c --argjson id "$ITEM_PRODUCT_ID" '.[] | select(.id == $id)')
+[ "$(echo "$PRODUCT_LINKED" | jq -r .category_id)" = "null" ] \
+  || { echo "FAIL: expected null category_id on product-linked item, got $PRODUCT_LINKED"; exit 1; }
+[ "$(echo "$PRODUCT_LINKED" | jq -r .category_name)" = "Dairy" ] \
+  || { echo "FAIL: expected category_name 'Dairy' (inherited from product) on product-linked item, got $PRODUCT_LINKED"; exit 1; }
+
+echo "== shopping-list: patch to set category_id on a product-linked item (expect 422) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/api/shopping-list/$ITEM_PRODUCT_ID" \
+  -H 'content-type: application/json' -d '{"category_id": '"$SHOPPING_CATEGORY_ID"'}')
+[ "$STATUS" = "422" ] || { echo "FAIL: expected 422 patching category_id onto a product-linked item, got $STATUS"; exit 1; }
+
+echo "== shopping-list: clean up categorized free-text item =="
+curl -sf -o /dev/null -X DELETE "$BASE/api/shopping-list/$CATEGORIZED_ITEM_ID"
+
 echo "== shopping-list: patch free-text item done=true =="
 curl -sf -X PATCH "$BASE/api/shopping-list/$ITEM_TEXT_ID" \
   -H 'content-type: application/json' -d '{"done": true}' | jq .

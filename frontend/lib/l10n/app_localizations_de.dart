@@ -816,6 +816,15 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get editItemTooltip => 'Artikel bearbeiten';
+
+  @override
+  String get editShoppingListItemTitle => 'Artikel bearbeiten';
+
+  @override
+  String get unitFieldLabel => 'Einheit';
+
+  @override
   String get addLowStockTooltip => 'Niedrigen Bestand hinzufügen';
 
   @override

@@ -3,7 +3,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.db import get_db
-from app.models import Product, ShoppingListItem, StockEntry
+from app.models import Category, Product, ShoppingListItem, StockEntry
 from app.routers.stats import low_stock_products_query
 from app.schemas import ShoppingListItemCreate, ShoppingListItemRead, ShoppingListItemUpdate
 
@@ -34,6 +34,8 @@ def _to_read(item: ShoppingListItem) -> ShoppingListItemRead:
         amount=item.amount,
         unit=_display_unit(item),
         done=item.done,
+        category_id=item.category_id,
+        category_name=item.category_name,
         created_at=item.created_at,
     )
 
@@ -42,7 +44,10 @@ def _to_read(item: ShoppingListItem) -> ShoppingListItemRead:
 def list_shopping_list(db: Session = Depends(get_db)):
     items = (
         db.query(ShoppingListItem)
-        .options(joinedload(ShoppingListItem.product))
+        .options(
+            joinedload(ShoppingListItem.product).joinedload(Product.category),
+            joinedload(ShoppingListItem.category),
+        )
         # Open items first, then done; newest-first within each group.
         .order_by(ShoppingListItem.done.asc(), ShoppingListItem.created_at.desc())
         .all()
@@ -54,6 +59,8 @@ def list_shopping_list(db: Session = Depends(get_db)):
 def create_shopping_list_item(payload: ShoppingListItemCreate, db: Session = Depends(get_db)):
     if payload.product_id is not None and not db.get(Product, payload.product_id):
         raise HTTPException(404, "Product not found")
+    if payload.category_id is not None and not db.get(Category, payload.category_id):
+        raise HTTPException(404, "Category not found")
     item = ShoppingListItem(**payload.model_dump())
     db.add(item)
     db.commit()
@@ -124,6 +131,9 @@ def update_shopping_list_item(
     if "product_id" in data and data["product_id"] is not None:
         if not db.get(Product, data["product_id"]):
             raise HTTPException(404, "Product not found")
+    if "category_id" in data and data["category_id"] is not None:
+        if not db.get(Category, data["category_id"]):
+            raise HTTPException(404, "Category not found")
     # Validate the *merged* result (existing row + incoming fields) before
     # touching the session -- a PATCH that only sets product_id to null (with
     # name already null/blank) must not be allowed to drop both identities,
@@ -133,6 +143,15 @@ def update_shopping_list_item(
     merged_name = data.get("name", item.name)
     if merged_product_id is None and not merged_name:
         raise HTTPException(422, "Either product_id or name is required")
+    # Same merged-result reasoning applies to category_id -- it's only
+    # meaningful on a free-text item (see ShoppingListItem docstring), so a
+    # PATCH that would leave both product_id and category_id set is rejected
+    # rather than silently letting one shadow the other.
+    merged_category_id = data.get("category_id", item.category_id)
+    if merged_product_id is not None and merged_category_id is not None:
+        raise HTTPException(
+            422, "category_id can only be set on a free-text item (product_id must be null)"
+        )
     for key, value in data.items():
         setattr(item, key, value)
     db.commit()

@@ -406,6 +406,9 @@
   "@shoppingListItemDeleted": {
     "placeholders": { "name": { "type": "String" } }
   },
+  "editItemTooltip": "Edit item",
+  "editShoppingListItemTitle": "Edit item",
+  "unitFieldLabel": "Unit",
   "addLowStockTooltip": "Add low stock",
   "lowStockAddedCount": "{count, plural, =0{No low-stock items to add.} =1{Added 1 item.} other{Added {count} items.}}",
   "@lowStockAddedCount": {

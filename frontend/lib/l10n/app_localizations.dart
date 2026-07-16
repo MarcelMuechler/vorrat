@@ -1358,6 +1358,24 @@ abstract class AppLocalizations {
   /// **'Deleted \"{name}\".'**
   String shoppingListItemDeleted(String name);
 
+  /// No description provided for @editItemTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit item'**
+  String get editItemTooltip;
+
+  /// No description provided for @editShoppingListItemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit item'**
+  String get editShoppingListItemTitle;
+
+  /// No description provided for @unitFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get unitFieldLabel;
+
   /// No description provided for @addLowStockTooltip.
   ///
   /// In en, this message translates to:

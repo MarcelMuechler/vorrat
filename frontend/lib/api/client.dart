@@ -370,12 +370,14 @@ class ApiClient {
     String? name,
     double? amount,
     String? unit,
+    int? categoryId,
   }) async {
     final payload = <String, dynamic>{
       'product_id': ?productId,
       'name': ?name,
       'amount': ?amount,
       'unit': ?unit,
+      'category_id': ?categoryId,
     };
     final res = await _postJson('/api/shopping-list', payload);
     return ShoppingListItem.fromJson(jsonDecode(res.body));

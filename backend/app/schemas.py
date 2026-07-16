@@ -245,6 +245,7 @@ class ShoppingListItemCreate(BaseModel):
     name: str | None = Field(default=None, min_length=1)
     amount: float = Field(default=1, gt=0)
     unit: str | None = None
+    category_id: int | None = None
 
     _strip_name = field_validator("name", mode="before")(_strip_name)
 
@@ -254,6 +255,12 @@ class ShoppingListItemCreate(BaseModel):
             raise ValueError("Either product_id or name is required")
         return self
 
+    @model_validator(mode="after")
+    def _category_only_for_free_text(self) -> "ShoppingListItemCreate":
+        if self.category_id is not None and self.product_id is not None:
+            raise ValueError("category_id can only be set on a free-text item (product_id must be null)")
+        return self
+
 
 class ShoppingListItemUpdate(BaseModel):
     product_id: int | None = None
@@ -261,6 +268,7 @@ class ShoppingListItemUpdate(BaseModel):
     amount: float | None = Field(default=None, gt=0)
     unit: str | None = None
     done: bool | None = None
+    category_id: int | None = None
 
     _strip_name = field_validator("name", mode="before")(_strip_name)
 
@@ -274,4 +282,6 @@ class ShoppingListItemRead(BaseModel):
     amount: float
     unit: str | None
     done: bool
+    category_id: int | None
+    category_name: str | None
     created_at: datetime

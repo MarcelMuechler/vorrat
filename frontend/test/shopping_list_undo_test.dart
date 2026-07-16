@@ -33,8 +33,15 @@ class FakeApiClient extends ApiClient {
     String? name,
     double? amount,
     String? unit,
+    int? categoryId,
   }) async {
-    lastCreatePayload = {'productId': productId, 'name': name, 'amount': amount, 'unit': unit};
+    lastCreatePayload = {
+      'productId': productId,
+      'name': name,
+      'amount': amount,
+      'unit': unit,
+      'categoryId': categoryId,
+    };
     final created = ShoppingListItem(
       id: _nextId++,
       productId: productId,
@@ -84,6 +91,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Milk'), findsOneWidget);
-    expect(api.lastCreatePayload, {'productId': null, 'name': 'Milk', 'amount': 1.0, 'unit': null});
+    expect(api.lastCreatePayload, {
+      'productId': null,
+      'name': 'Milk',
+      'amount': 1.0,
+      'unit': null,
+      'categoryId': null,
+    });
   });
 }

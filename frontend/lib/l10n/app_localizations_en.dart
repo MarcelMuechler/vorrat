@@ -808,6 +808,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get editItemTooltip => 'Edit item';
+
+  @override
+  String get editShoppingListItemTitle => 'Edit item';
+
+  @override
+  String get unitFieldLabel => 'Unit';
+
+  @override
   String get addLowStockTooltip => 'Add low stock';
 
   @override

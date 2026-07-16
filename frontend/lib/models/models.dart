@@ -157,6 +157,13 @@ class ShoppingListItem {
   final double amount;
   final String? unit;
   final bool done;
+  // Only ever set on a free-text item (product-linked items inherit their
+  // category from the product instead, see categoryName) -- #122.
+  final int? categoryId;
+  // Effective/display category: the item's own for a free-text item, falling
+  // back to the linked product's category otherwise. Matches the backend's
+  // ShoppingListItem.category_name property.
+  final String? categoryName;
   final DateTime createdAt;
 
   ShoppingListItem({
@@ -167,6 +174,8 @@ class ShoppingListItem {
     required this.createdAt,
     this.productId,
     this.unit,
+    this.categoryId,
+    this.categoryName,
   });
 
   factory ShoppingListItem.fromJson(Map<String, dynamic> json) => ShoppingListItem(
@@ -176,6 +185,8 @@ class ShoppingListItem {
         amount: (json['amount'] as num).toDouble(),
         unit: json['unit'],
         done: json['done'],
+        categoryId: json['category_id'],
+        categoryName: json['category_name'],
         createdAt: DateTime.parse(json['created_at']),
       );
 }
