@@ -221,6 +221,11 @@
   "targetStockLevelLabel": "Target stock level",
   "targetStockLevelHint": "e.g. 5 — add-low-stock restocks up to this amount instead of just 1",
 
+  "extraBarcodesLabel": "Alternate barcodes",
+  "extraBarcodesHint": "Other codes (e.g. a different pack size) that should also scan to this product",
+  "addBarcodeTooltip": "Add barcode",
+  "removeBarcodeTooltip": "Remove barcode",
+
   "deleteProductTitle": "Delete product?",
   "deleteProductConfirm": "This deletes \"{name}\". Products still in stock can't be deleted.",
   "@deleteProductConfirm": {

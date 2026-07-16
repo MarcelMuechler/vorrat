@@ -21,6 +21,10 @@ class Category {
 class Product {
   final int id;
   final String? barcode;
+  // Alternate/extra scannable codes for this product (#208) -- e.g. a
+  // different pack size or a regional/reprinted barcode for the same item --
+  // beyond the single primary [barcode] above.
+  final List<String> extraBarcodes;
   final String name;
   final String? imageUrl;
   final int? categoryId;
@@ -36,6 +40,7 @@ class Product {
     required this.id,
     required this.name,
     this.barcode,
+    this.extraBarcodes = const [],
     this.imageUrl,
     this.categoryId,
     this.categoryName,
@@ -50,6 +55,7 @@ class Product {
   factory Product.fromJson(Map<String, dynamic> json) => Product(
         id: json['id'],
         barcode: json['barcode'],
+        extraBarcodes: (json['extra_barcodes'] as List?)?.cast<String>() ?? const [],
         name: json['name'],
         imageUrl: json['image_url'],
         categoryId: json['category_id'],

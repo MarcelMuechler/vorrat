@@ -866,6 +866,30 @@ abstract class AppLocalizations {
   /// **'e.g. 5 — add-low-stock restocks up to this amount instead of just 1'**
   String get targetStockLevelHint;
 
+  /// No description provided for @extraBarcodesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Alternate barcodes'**
+  String get extraBarcodesLabel;
+
+  /// No description provided for @extraBarcodesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Other codes (e.g. a different pack size) that should also scan to this product'**
+  String get extraBarcodesHint;
+
+  /// No description provided for @addBarcodeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add barcode'**
+  String get addBarcodeTooltip;
+
+  /// No description provided for @removeBarcodeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove barcode'**
+  String get removeBarcodeTooltip;
+
   /// No description provided for @deleteProductTitle.
   ///
   /// In en, this message translates to:

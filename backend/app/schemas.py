@@ -83,6 +83,7 @@ class ProductRead(BaseModel):
 
     id: int
     barcode: str | None
+    extra_barcodes: list[str]
     name: str
     image_url: str | None
     category_id: int | None
@@ -94,6 +95,12 @@ class ProductRead(BaseModel):
     low_stock_threshold: float | None
     target_stock_level: float | None
     created_at: datetime
+
+
+class ProductBarcodeCreate(BaseModel):
+    code: str = Field(min_length=1)
+
+    _normalize_barcode = field_validator("code", mode="before")(normalize_barcode)
 
 
 class StockEntryCreate(BaseModel):
