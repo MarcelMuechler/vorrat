@@ -174,9 +174,10 @@ void main() {
     expect(find.text('Jam'), findsOneWidget);
     expect(find.text('Scan'), findsOneWidget);
     // Amount is now a stepper (a caption label beside a plain TextField, no
-    // -/+ pressed) rather than a labeled TextField.
+    // -/+ pressed) rather than a labeled TextField. The sheet also has an
+    // optional price field, so two TextFields are expected.
     expect(find.text('Amount'), findsOneWidget);
-    expect(find.byType(TextField), findsOneWidget);
+    expect(find.byType(TextField), findsNWidgets(2));
 
     await tester.tap(find.widgetWithText(FilledButton, 'Add'));
     for (var i = 0; i < 10; i++) {
@@ -184,7 +185,13 @@ void main() {
     }
 
     expect(api.addStockCalls, [
-      {'product_id': 1, 'location_id': null, 'amount': 1.0, 'best_before_date': null},
+      {
+        'product_id': 1,
+        'location_id': null,
+        'amount': 1.0,
+        'best_before_date': null,
+        'price': null,
+      },
     ]);
     // Sheet dismissed, snackbar confirms, still on the Scan screen.
     expect(find.text('Added "Jam" to stock.'), findsOneWidget);
