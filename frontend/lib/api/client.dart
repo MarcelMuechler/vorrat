@@ -258,22 +258,16 @@ class ApiClient {
   }
 
   /// Atomically reverses [consumeStock]: deletes the ConsumptionLog row
-  /// [logId] and recreates the original batch from [item]/[amount] in a
-  /// single backend transaction (#160) -- unlike a plain [addStock] call,
-  /// this also removes the log entry, so an undone consume no longer
-  /// leaves usage/waste stats permanently overstated. Throws
-  /// [ApiException] (404) if the log was already undone, or if the
-  /// product/location referenced by [item] no longer exists.
-  Future<void> undoConsumeStock(int logId, StockItem item, double amount) async {
-    await _postJson('/api/stock/undo/$logId', {
-      'product_id': item.productId,
-      'location_id': item.locationId,
-      'amount': amount,
-      'best_before_date': item.bestBeforeDate?.toIso8601String().split('T').first,
-      'purchased_date': item.purchasedDate?.toIso8601String().split('T').first,
-      'opened_at': item.openedAt?.toIso8601String().split('T').first,
-      'price': item.price,
-    });
+  /// [logId] and recreates the batch it removed in a single backend
+  /// transaction (#160) -- unlike a plain [addStock] call, this also removes
+  /// the log entry, so an undone consume no longer leaves usage/waste stats
+  /// permanently overstated. The undo is server-authoritative (#224): the
+  /// backend rebuilds the batch from an immutable snapshot it took at
+  /// consume time and ignores any request body, so no stock data is sent.
+  /// Throws [ApiException] (404) if the log was already undone, or (409) if
+  /// it was not created by a single, undoable consume.
+  Future<void> undoConsumeStock(int logId) async {
+    await _postJson('/api/stock/undo/$logId', const {});
   }
 
   /// Fully consumes (whole remaining amount) every listed entry, logged like

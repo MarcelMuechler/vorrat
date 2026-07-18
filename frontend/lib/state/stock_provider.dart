@@ -250,12 +250,13 @@ class StockProvider extends ChangeNotifier {
 
   /// True "Undo" for [consume] (#160): calls the backend's
   /// /api/stock/undo/{log_id}, which atomically deletes the ConsumptionLog
-  /// row [consumptionLogId] (returned by [consume]) and recreates the
-  /// batch from [item]/[amount] in one transaction -- unlike the old
-  /// client-side-only recreate (#137), this also removes the log entry, so
-  /// usage/waste stats aren't left permanently overstated after an undo.
-  Future<void> undoConsume(StockItem item, double amount, int consumptionLogId) async {
-    await api.undoConsumeStock(consumptionLogId, item, amount);
+  /// row [consumptionLogId] (returned by [consume]) and recreates the batch
+  /// it removed in one transaction -- unlike the old client-side-only
+  /// recreate (#137), this also removes the log entry, so usage/waste stats
+  /// aren't left permanently overstated after an undo. The batch is rebuilt
+  /// server-side from an immutable snapshot (#224), not from client data.
+  Future<void> undoConsume(int consumptionLogId) async {
+    await api.undoConsumeStock(consumptionLogId);
     await refresh();
   }
 
