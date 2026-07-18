@@ -26,7 +26,12 @@ from app.schemas import (
     StockOverviewItem,
     StockUndoConsume,
 )
-from app.utils import escape_like, normalize_barcode
+from app.utils import (
+    escape_csv_formula_injection,
+    escape_like,
+    normalize_barcode,
+    unescape_csv_formula_injection,
+)
 
 router = APIRouter(prefix="/api/stock", tags=["stock"])
 
@@ -145,9 +150,9 @@ def export_stock_csv(db: Session = Depends(get_db)):
     for item in _query_stock(db):
         writer.writerow(
             [
-                item.product_name,
-                item.product_barcode or "",
-                item.location_name or "",
+                escape_csv_formula_injection(item.product_name),
+                escape_csv_formula_injection(item.product_barcode or ""),
+                escape_csv_formula_injection(item.location_name or ""),
                 item.amount,
                 item.best_before_date or "",
                 item.status,
@@ -226,11 +231,11 @@ async def import_stock_csv(request: Request, db: Session = Depends(get_db)):
 
     for row_number, row in enumerate(reader, start=1):
         try:
-            name = (row.get("product_name") or "").strip()
+            name = unescape_csv_formula_injection((row.get("product_name") or "").strip())
             if not name:
                 raise ValueError("product_name is required")
 
-            barcode = normalize_barcode(row.get("barcode"))
+            barcode = normalize_barcode(unescape_csv_formula_injection(row.get("barcode")))
 
             amount_raw = (row.get("amount") or "").strip()
             if not amount_raw:
@@ -250,7 +255,7 @@ async def import_stock_csv(request: Request, db: Session = Depends(get_db)):
                 except ValueError:
                     raise ValueError(f"invalid best_before_date: {best_before_raw!r}") from None
 
-            location_raw = (row.get("location") or "").strip()
+            location_raw = unescape_csv_formula_injection((row.get("location") or "").strip())
             location_id = None
             if location_raw:
                 location_id = _resolve_location(db, location_raw, location_cache).id
