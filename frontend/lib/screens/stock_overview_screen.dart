@@ -657,7 +657,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   ) async {
     try {
       final logId = await stock.consume(item.id, amount, reason: reason);
-      if (context.mounted) _showUndoConsumeSnackBar(context, stock, item, amount, reason, logId);
+      if (context.mounted) _showUndoConsumeSnackBar(context, stock, item, reason, logId);
       return true;
     } catch (e) {
       if (context.mounted) {
@@ -677,7 +677,6 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     BuildContext context,
     StockProvider stock,
     StockItem item,
-    double amount,
     String reason,
     int consumptionLogId,
   ) {
@@ -685,19 +684,17 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     showUndoSnackBar(
       context,
       message: reason == 'spoiled' ? l10n.scannedDiscarded(item.productName) : l10n.scannedUsed(item.productName),
-      onUndo: () => _undoConsume(context, stock, item, amount, consumptionLogId),
+      onUndo: () => _undoConsume(context, stock, consumptionLogId),
     );
   }
 
   Future<void> _undoConsume(
     BuildContext context,
     StockProvider stock,
-    StockItem item,
-    double amount,
     int consumptionLogId,
   ) async {
     try {
-      await stock.undoConsume(item, amount, consumptionLogId);
+      await stock.undoConsume(consumptionLogId);
     } catch (e) {
       if (context.mounted) {
         final l10n = AppLocalizations.of(context)!;

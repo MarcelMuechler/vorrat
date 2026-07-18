@@ -78,7 +78,7 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
       final logId = await context.read<ApiClient>().consumeStock(item.id, amount, reason: reason);
       await _refresh();
       if (mounted) await context.read<StockProvider>().refresh();
-      if (mounted) _showUndoConsumeSnackBar(item, amount, reason, logId);
+      if (mounted) _showUndoConsumeSnackBar(item, reason, logId);
       return true;
     } catch (e) {
       if (mounted) {
@@ -93,18 +93,18 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
   // Same rationale as StockOverviewScreen's identically-named method (#137):
   // a swipe (or Use/Spoil) consumes/discards a whole batch with no
   // confirmation, so it gets an Undo (atomic reversal, #160).
-  void _showUndoConsumeSnackBar(StockItem item, double amount, String reason, int consumptionLogId) {
+  void _showUndoConsumeSnackBar(StockItem item, String reason, int consumptionLogId) {
     final l10n = AppLocalizations.of(context)!;
     showUndoSnackBar(
       context,
       message: reason == 'spoiled' ? l10n.scannedDiscarded(item.productName) : l10n.scannedUsed(item.productName),
-      onUndo: () => _undoConsume(item, amount, consumptionLogId),
+      onUndo: () => _undoConsume(consumptionLogId),
     );
   }
 
-  Future<void> _undoConsume(StockItem item, double amount, int consumptionLogId) async {
+  Future<void> _undoConsume(int consumptionLogId) async {
     try {
-      await context.read<StockProvider>().undoConsume(item, amount, consumptionLogId);
+      await context.read<StockProvider>().undoConsume(consumptionLogId);
       if (mounted) await _refresh();
     } catch (e) {
       if (mounted) {
