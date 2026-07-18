@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.19.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.18.3...v0.19.0) (2026-07-18)
+
+
+### Features
+
+* **backend,frontend:** in-app SQLite backup/restore from Settings ([e1d063a](https://github.com/MarcelMuechler/Vorrat/commit/e1d063a2f95ad241b24bacced96dbf0640948e0e)), closes [#212](https://github.com/MarcelMuechler/Vorrat/issues/212)
+* **products:** upload a custom product photo ([#210](https://github.com/MarcelMuechler/Vorrat/issues/210)) ([77b7cc1](https://github.com/MarcelMuechler/Vorrat/commit/77b7cc1a541015e30305eb51cfe98d3bd0a684b8))
+
 ## [0.18.3](https://github.com/MarcelMuechler/Vorrat/compare/v0.18.2...v0.18.3) (2026-07-18)
 
 
