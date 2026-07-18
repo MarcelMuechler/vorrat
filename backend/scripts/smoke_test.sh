@@ -103,6 +103,54 @@ echo "== barcode: the removed alternate code no longer resolves locally (expect 
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/barcode/9998887776665")
 [ "$STATUS" = "404" ] || { echo "FAIL: expected 404 looking up a removed alternate barcode, got $STATUS"; exit 1; }
 
+echo "== barcode uniqueness (#223): primary and alternate codes share one global namespace =="
+UNIQ_A_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' -d '{"name": "Uniq A", "barcode": "111"}' | jq -r .id)
+UNIQ_B_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' -d '{"name": "Uniq B", "barcode": "222"}' | jq -r .id)
+
+echo "== #223 direction 1: adding B's primary (222) as an alternate of A must 409, not shadow B =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/products/$UNIQ_A_ID/barcodes" \
+  -H 'content-type: application/json' -d '{"code": "222"}')
+[ "$STATUS" = "409" ] || { echo "FAIL: expected 409 adding another product's primary barcode as an alternate, got $STATUS"; exit 1; }
+
+echo "== #223: lookup of 222 still resolves to its real owner B, not A =="
+LOOKUP_OWNER=$(curl -sf "$BASE/api/barcode/222" | jq -r .product.id)
+[ "$LOOKUP_OWNER" = "$UNIQ_B_ID" ] \
+  || { echo "FAIL: expected 222 to resolve to B ($UNIQ_B_ID), got $LOOKUP_OWNER"; exit 1; }
+
+echo "== #223 direction 2: PATCH A's primary to a code that's already an alternate of B must 409 =="
+curl -sf -o /dev/null -X POST "$BASE/api/products/$UNIQ_B_ID/barcodes" \
+  -H 'content-type: application/json' -d '{"code": "333"}'
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/api/products/$UNIQ_A_ID" \
+  -H 'content-type: application/json' -d '{"barcode": "333"}')
+[ "$STATUS" = "409" ] \
+  || { echo "FAIL: expected 409 patching a primary barcode to another product's alternate code, got $STATUS"; exit 1; }
+
+echo "== #223: A's primary is unchanged (still 111) after the rejected patch =="
+A_BARCODE=$(curl -sf "$BASE/api/products/$UNIQ_A_ID" | jq -r .barcode)
+[ "$A_BARCODE" = "111" ] || { echo "FAIL: expected A's barcode to stay 111 after rejected patch, got $A_BARCODE"; exit 1; }
+
+echo "== #223: re-saving A's own unchanged primary (111) is still allowed (self-collision excluded) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/api/products/$UNIQ_A_ID" \
+  -H 'content-type: application/json' -d '{"barcode": "111"}')
+[ "$STATUS" = "200" ] || { echo "FAIL: expected 200 re-saving a product's own unchanged barcode, got $STATUS"; exit 1; }
+
+echo "== #223: creating a new product whose primary equals an existing alternate (333) must 409 =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' -d '{"name": "Uniq C", "barcode": "333"}')
+[ "$STATUS" = "409" ] \
+  || { echo "FAIL: expected 409 creating a product whose primary duplicates an existing alternate code, got $STATUS"; exit 1; }
+
+echo "== #223: lookup of 333 resolves to its owner B (alternate never shadowed by a colliding primary) =="
+LOOKUP_OWNER=$(curl -sf "$BASE/api/barcode/333" | jq -r .product.id)
+[ "$LOOKUP_OWNER" = "$UNIQ_B_ID" ] \
+  || { echo "FAIL: expected 333 to resolve to B ($UNIQ_B_ID), got $LOOKUP_OWNER"; exit 1; }
+
+echo "== #223: clean up uniqueness-test products =="
+curl -sf -o /dev/null -X DELETE "$BASE/api/products/$UNIQ_A_ID"
+curl -sf -o /dev/null -X DELETE "$BASE/api/products/$UNIQ_B_ID"
+
 PAST_DATE=$(date -d "yesterday" +%Y-%m-%d 2>/dev/null || date -v-1d +%Y-%m-%d)
 SOON_DATE=$(date -d "+2 days" +%Y-%m-%d 2>/dev/null || date -v+2d +%Y-%m-%d)
 FAR_DATE=$(date -d "+30 days" +%Y-%m-%d 2>/dev/null || date -v+30d +%Y-%m-%d)
