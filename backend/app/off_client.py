@@ -33,6 +33,27 @@ _MAX_ATTEMPTS = 3
 _RETRY_BACKOFF_SECONDS = (0.5, 1.0)
 _REQUEST_TIMEOUT_SECONDS = 3.0
 
+# Lifecycle-managed HTTP client, reused across all OFF requests (and retries)
+# for connection pooling / TCP+TLS reuse. Set by init_client() during FastAPI
+# lifespan startup and torn down by close_client() on shutdown. A plain
+# module-level holder rather than an abstraction layer -- also lets a test
+# swap in a stub/mock client directly.
+_client: httpx.AsyncClient | None = None
+
+
+def init_client() -> None:
+    """Create the shared OFF HTTP client. Call once during app startup."""
+    global _client
+    _client = httpx.AsyncClient(timeout=_REQUEST_TIMEOUT_SECONDS)
+
+
+async def close_client() -> None:
+    """Close the shared OFF HTTP client. Call once during app shutdown."""
+    global _client
+    if _client is not None:
+        await _client.aclose()
+        _client = None
+
 
 def _cache_get(barcode: str) -> tuple[bool, dict | None]:
     """Returns (hit, result). A stale entry counts as a miss and is dropped."""
@@ -87,12 +108,17 @@ async def lookup_off(barcode: str) -> dict | None:
 
 async def _request_off(barcode: str) -> dict:
     """A single OFF request attempt. Raises httpx.HTTPError/ValueError on failure."""
+    if _client is None:
+        # Not initialized (init_client() wasn't called, e.g. lifespan didn't
+        # run) or already closed. Raise an httpx.HTTPError subclass rather
+        # than letting an AttributeError through, so _fetch_off's retry/error
+        # handling -- and lookup_off's never-raises contract -- still apply.
+        raise httpx.ConnectError("OFF HTTP client not initialized")
     url = f"{settings.off_base_url}/api/v2/product/{quote(barcode, safe='')}.json"
     headers = {"User-Agent": settings.off_user_agent}
-    async with httpx.AsyncClient(timeout=_REQUEST_TIMEOUT_SECONDS) as client:
-        response = await client.get(url, headers=headers)
-        response.raise_for_status()
-        return response.json()
+    response = await _client.get(url, headers=headers)
+    response.raise_for_status()
+    return response.json()
 
 
 async def _fetch_off(barcode: str) -> dict | None | object:
@@ -171,6 +197,20 @@ if __name__ == "__main__":
         request = httpx.Request("GET", "https://example.invalid")
         response = httpx.Response(status_code, request=request)
         return httpx.HTTPStatusError("boom", request=request, response=response)
+
+    # If init_client() was never called (or close_client() already ran),
+    # _request_off must raise an httpx.HTTPError -- not AttributeError -- so
+    # _fetch_off's existing retry/error handling still applies and
+    # lookup_off's never-raises contract holds even when the shared client
+    # is unavailable.
+    assert _client is None
+    assert asyncio.run(_fetch_off("777")) is _ERROR
+
+    # init_client()/close_client() set up and tear down the shared client.
+    init_client()
+    assert _client is not None
+    asyncio.run(close_client())
+    assert _client is None
 
     # Retries a transient failure and succeeds once the network recovers.
     # These stub out _request_off (the single-attempt helper) rather than

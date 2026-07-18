@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from html import escape as escape_html
 from pathlib import Path
 
@@ -6,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import __version__
+from app import __version__, off_client
 from app.routers import (
     barcode,
     categories,
@@ -19,7 +20,20 @@ from app.routers import (
     stock,
 )
 
-app = FastAPI(title="Vorrat", version=__version__)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Shared OFF HTTP client, reused across all Open Food Facts lookups (and
+    # their retries) for connection pooling instead of a new connection per
+    # request -- see off_client.py.
+    off_client.init_client()
+    try:
+        yield
+    finally:
+        await off_client.close_client()
+
+
+app = FastAPI(title="Vorrat", version=__version__, lifespan=lifespan)
 print(f"Vorrat backend v{__version__} starting", flush=True)
 
 # ponytail: allow_origins=["*"] is fine here, v1 has no auth and this only
