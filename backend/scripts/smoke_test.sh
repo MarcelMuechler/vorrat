@@ -773,6 +773,12 @@ NEW_PRODUCT_COUNT=$(curl -sf "$BASE/api/stock?search=New%20Import%20Product" \
 [ "$NEW_PRODUCT_COUNT" = "1" ] \
   || { echo "FAIL: expected new product+location to be created from import"; exit 1; }
 
+echo "== stock/import.csv: old-format CSV (no purchased_date/opened_at/price/quantity_unit columns) still imports fine, those fields left null (#227 backward compatibility) =="
+NEW_IMPORT_FIELDS=$(curl -sf "$BASE/api/stock?search=New%20Import%20Product" \
+  | jq -r '.[0] | [.purchased_date, .opened_at, .price] | @csv')
+[ "$NEW_IMPORT_FIELDS" = ",," ] \
+  || { echo "FAIL: expected purchased_date/opened_at/price to be null for a row imported from an old-format CSV, got $NEW_IMPORT_FIELDS"; exit 1; }
+
 echo "== stock/export.csv -> stock/import.csv: round-trip should re-import with zero errors =="
 EXPORT_COUNT=$(curl -sf "$BASE/api/stock" | jq 'length')
 EXPORTED_CSV=$(curl -sf "$BASE/api/stock/export.csv")
@@ -820,6 +826,68 @@ echo "== stock/import.csv: a subsequent well-formed import still works after the
 RECOVERY_RESULT=$(curl -sf -X POST "$BASE/api/stock/import.csv" -H 'content-type: text/csv' --data-binary "$(printf 'product_name,barcode,location,amount,best_before_date\nMilk,1234567890123,Fridge,1,%s\n' "$FAR_DATE")")
 [ "$(echo "$RECOVERY_RESULT" | jq -r .imported)" = "1" ] \
   || { echo "FAIL: expected imported=1 on the recovery import after a rolled-back malformed request, got $RECOVERY_RESULT"; exit 1; }
+
+echo "== stock/export.csv: purchased_date/opened_at/price survive round-trip, preserving an opened item's effective expiry (#227) =="
+RT_LOCATION_ID=$(curl -sf -X POST "$BASE/api/locations" \
+  -H 'content-type: application/json' -d '{"name": "Roundtrip Shelf"}' | jq -r .id)
+RT_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Roundtrip Yogurt", "default_open_shelf_life_days": 0}' | jq -r .id)
+RT_ENTRY_ID=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$RT_PRODUCT_ID"', "location_id": '"$RT_LOCATION_ID"', "amount": 1, "best_before_date": "'"$FAR_DATE"'", "purchased_date": "'"$PAST_DATE"'", "price": 9.99}' \
+  | jq -r .id)
+curl -sf -X PATCH "$BASE/api/stock/$RT_ENTRY_ID" \
+  -H 'content-type: application/json' -d '{"opened_at": "'"$PAST_DATE"'"}' > /dev/null
+
+# best_before_date is far in the future, but a 1-day open shelf life plus
+# opened_at=yesterday brings the *effective* expiry into the past -- this is
+# exactly the scenario #227 warns about: if opened_at is lost on export ->
+# import, this entry would wrongly stop reading as expired.
+RT_STATUS_BEFORE=$(curl -sf "$BASE/api/stock?product_id=$RT_PRODUCT_ID" | jq -r '.[0].status')
+[ "$RT_STATUS_BEFORE" = "expired" ] \
+  || { echo "FAIL: expected opened item (1-day open shelf life, opened_at=yesterday) to already read expired, got $RT_STATUS_BEFORE"; exit 1; }
+
+RT_EXPORTED_CSV=$(curl -sf "$BASE/api/stock/export.csv")
+echo "$RT_EXPORTED_CSV" | tr -d '\r' | head -1 \
+  | grep -qx 'product_name,barcode,quantity_unit,location,amount,best_before_date,purchased_date,opened_at,price,status' \
+  || { echo "FAIL: unexpected export.csv header: $(echo "$RT_EXPORTED_CSV" | head -1)"; exit 1; }
+RT_EXPORTED_ROW=$(echo "$RT_EXPORTED_CSV" | tr -d '\r' | grep "Roundtrip Yogurt")
+echo "$RT_EXPORTED_ROW" \
+  | grep -qx "Roundtrip Yogurt,,pcs,Roundtrip Shelf,1.0,$FAR_DATE,$PAST_DATE,$PAST_DATE,9.99,expired" \
+  || { echo "FAIL: expected exported row to carry purchased_date/opened_at/price, got: $RT_EXPORTED_ROW"; exit 1; }
+
+# Re-import just this one exported row (not the whole file) to keep the
+# blast radius scoped to this product.
+RT_SCOPED_CSV=$(printf '%s\n%s\n' "$(echo "$RT_EXPORTED_CSV" | head -1)" "$RT_EXPORTED_ROW")
+RT_REIMPORT_RESULT=$(curl -sf -X POST "$BASE/api/stock/import.csv" -H 'content-type: text/csv' --data-binary "$RT_SCOPED_CSV")
+[ "$(echo "$RT_REIMPORT_RESULT" | jq -r .imported)" = "1" ] \
+  || { echo "FAIL: expected the scoped Roundtrip Yogurt row to import cleanly, got $RT_REIMPORT_RESULT"; exit 1; }
+
+RT_ALL_STATUSES=$(curl -sf "$BASE/api/stock?product_id=$RT_PRODUCT_ID" | jq -r '[.[].status] | unique | join(",")')
+[ "$RT_ALL_STATUSES" = "expired" ] \
+  || { echo "FAIL: expected both the original and re-imported Roundtrip Yogurt entries to read expired, got $RT_ALL_STATUSES"; exit 1; }
+RT_REIMPORTED_FIELDS=$(curl -sf "$BASE/api/stock?product_id=$RT_PRODUCT_ID" \
+  | jq -r '[.[] | select(.id != '"$RT_ENTRY_ID"')][0] | [.purchased_date, .opened_at, .price] | @csv')
+[ "$RT_REIMPORTED_FIELDS" = "\"$PAST_DATE\",\"$PAST_DATE\",9.99" ] \
+  || { echo "FAIL: expected re-imported entry's purchased_date/opened_at/price to match the original, got $RT_REIMPORTED_FIELDS"; exit 1; }
+
+echo "== stock/import.csv: quantity_unit is applied when a row creates a brand-new product (#227) =="
+NEW_UNIT_CSV=$(printf 'product_name,barcode,quantity_unit,location,amount,best_before_date,purchased_date,opened_at,price\nCsvNewUnitProduct227,,kg,,3,,,,\n')
+NEW_UNIT_IMPORT_RESULT=$(curl -sf -X POST "$BASE/api/stock/import.csv" -H 'content-type: text/csv' --data-binary "$NEW_UNIT_CSV")
+[ "$(echo "$NEW_UNIT_IMPORT_RESULT" | jq -r .imported)" = "1" ] \
+  || { echo "FAIL: expected the new-product quantity_unit row to import cleanly, got $NEW_UNIT_IMPORT_RESULT"; exit 1; }
+NEW_UNIT_PRODUCT_QU=$(curl -sf "$BASE/api/products?search=CsvNewUnitProduct227" | jq -r '.[0].quantity_unit')
+[ "$NEW_UNIT_PRODUCT_QU" = "kg" ] \
+  || { echo "FAIL: expected CSV-created product to pick up quantity_unit=kg, got $NEW_UNIT_PRODUCT_QU"; exit 1; }
+
+echo "== stock/import.csv: quantity_unit column does not override an already-existing product's unit (#227) =="
+EXISTING_UNIT_BEFORE=$(curl -sf "$BASE/api/products/$PRODUCT_ID" | jq -r .quantity_unit)
+OVERRIDE_UNIT_CSV=$(printf 'product_name,barcode,quantity_unit,location,amount\nMilk,1234567890123,l,,1\n')
+curl -sf -X POST "$BASE/api/stock/import.csv" -H 'content-type: text/csv' --data-binary "$OVERRIDE_UNIT_CSV" > /dev/null
+EXISTING_UNIT_AFTER=$(curl -sf "$BASE/api/products/$PRODUCT_ID" | jq -r .quantity_unit)
+[ "$EXISTING_UNIT_AFTER" = "$EXISTING_UNIT_BEFORE" ] \
+  || { echo "FAIL: expected importing quantity_unit=l for an existing product (Milk) to leave its unit ($EXISTING_UNIT_BEFORE) unchanged, got $EXISTING_UNIT_AFTER"; exit 1; }
 
 echo "== stock/bulk: create a fresh product + location and three stock entries for bulk ops =="
 BULK_LOCATION_ID=$(curl -sf -X POST "$BASE/api/locations" \
