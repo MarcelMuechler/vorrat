@@ -305,6 +305,58 @@ ZERO_SHELF_STATUS=$(curl -sf "$BASE/api/stock?product_id=$ZERO_SHELF_PRODUCT_ID"
 curl -sf -o /dev/null -X DELETE "$BASE/api/stock/$ZERO_SHELF_ENTRY_ID"
 curl -sf -o /dev/null -X DELETE "$BASE/api/products/$ZERO_SHELF_PRODUCT_ID"
 
+echo "== stock: opened, no-BBD entry exposes effective_expiry_date and is caught by expiring_within_days (#225) =="
+NOBBD_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Opened Yogurt", "default_open_shelf_life_days": 0}' \
+  | jq -r .id)
+NOBBD_ENTRY_ID=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$NOBBD_PRODUCT_ID"', "location_id": '"$LOCATION_ID"', "amount": 1}' \
+  | jq -r .id)
+curl -sf -X PATCH "$BASE/api/stock/$NOBBD_ENTRY_ID" \
+  -H 'content-type: application/json' -d '{"opened_at": "'"$TODAY"'"}' > /dev/null
+
+NOBBD_ITEM=$(curl -sf "$BASE/api/stock?product_id=$NOBBD_PRODUCT_ID")
+echo "$NOBBD_ITEM" | jq .
+[ "$(echo "$NOBBD_ITEM" | jq -r '.[0].best_before_date')" = "null" ] \
+  || { echo "FAIL: expected best_before_date to stay null for the opened no-BBD entry"; exit 1; }
+[ "$(echo "$NOBBD_ITEM" | jq -r '.[0].effective_expiry_date')" = "$TODAY" ] \
+  || { echo "FAIL: expected effective_expiry_date=$TODAY for the opened no-BBD entry, got $(echo "$NOBBD_ITEM" | jq -r '.[0].effective_expiry_date')"; exit 1; }
+[ "$(echo "$NOBBD_ITEM" | jq -r '.[0].status')" = "expiring_soon" ] \
+  || { echo "FAIL: expected status=expiring_soon for the opened no-BBD entry, got $(echo "$NOBBD_ITEM" | jq -r '.[0].status')"; exit 1; }
+
+NOBBD_IN_FILTER=$(curl -sf "$BASE/api/stock?expiring_within_days=0" \
+  | jq --argjson eid "$NOBBD_ENTRY_ID" '[.[] | select(.id == $eid)] | length')
+[ "$NOBBD_IN_FILTER" = "1" ] \
+  || { echo "FAIL: expected expiring_within_days=0 to include the opened no-BBD entry (it has no best_before_date to filter on), got count=$NOBBD_IN_FILTER"; exit 1; }
+
+echo "== stock: open-shelf-life expiry earlier than best_before_date wins, best_before_date itself is untouched (#225) =="
+EARLY_OPEN_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Opened Jam", "default_open_shelf_life_days": 1}' \
+  | jq -r .id)
+EARLY_OPEN_ENTRY_ID=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$EARLY_OPEN_PRODUCT_ID"', "location_id": '"$LOCATION_ID"', "amount": 1, "best_before_date": "'"$FAR_DATE"'"}' \
+  | jq -r .id)
+curl -sf -X PATCH "$BASE/api/stock/$EARLY_OPEN_ENTRY_ID" \
+  -H 'content-type: application/json' -d '{"opened_at": "'"$PAST_DATE"'"}' > /dev/null
+
+EARLY_OPEN_ITEM=$(curl -sf "$BASE/api/stock?product_id=$EARLY_OPEN_PRODUCT_ID")
+echo "$EARLY_OPEN_ITEM" | jq .
+[ "$(echo "$EARLY_OPEN_ITEM" | jq -r '.[0].best_before_date')" = "$FAR_DATE" ] \
+  || { echo "FAIL: expected best_before_date to remain $FAR_DATE, untouched by opening the item"; exit 1; }
+[ "$(echo "$EARLY_OPEN_ITEM" | jq -r '.[0].effective_expiry_date')" = "$TODAY" ] \
+  || { echo "FAIL: expected effective_expiry_date=$TODAY (opened_at=yesterday + 1 day open shelf life), got $(echo "$EARLY_OPEN_ITEM" | jq -r '.[0].effective_expiry_date')"; exit 1; }
+[ "$(echo "$EARLY_OPEN_ITEM" | jq -r '.[0].status')" = "expiring_soon" ] \
+  || { echo "FAIL: expected status=expiring_soon (driven by the open-shelf-life date, not the far-future best_before_date), got $(echo "$EARLY_OPEN_ITEM" | jq -r '.[0].status')"; exit 1; }
+
+curl -sf -o /dev/null -X DELETE "$BASE/api/stock/$NOBBD_ENTRY_ID"
+curl -sf -o /dev/null -X DELETE "$BASE/api/products/$NOBBD_PRODUCT_ID"
+curl -sf -o /dev/null -X DELETE "$BASE/api/stock/$EARLY_OPEN_ENTRY_ID"
+curl -sf -o /dev/null -X DELETE "$BASE/api/products/$EARLY_OPEN_PRODUCT_ID"
+
 echo "== shopping-list: create by product_id =="
 ITEM_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/shopping-list" \
   -H 'content-type: application/json' \

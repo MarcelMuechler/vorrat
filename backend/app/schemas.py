@@ -164,6 +164,13 @@ class StockOverviewItem(StockEntryRead):
     product_low_stock_threshold: float | None
     product_quantity_unit: str
     location_name: str | None
+    # Canonical expiry used for status/filtering/sorting (#225): the earlier
+    # of best_before_date and opened_at + the product's open shelf life, or
+    # just best_before_date if the item was never opened/has no BBD. Exposed
+    # so the frontend can bucket/display the same date the backend's own
+    # status and expiring_within_days filter are based on, rather than
+    # re-deriving it (or, before this, only ever looking at best_before_date).
+    effective_expiry_date: date | None
     status: str
 
 
