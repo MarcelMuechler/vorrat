@@ -572,17 +572,32 @@ LOG_COUNT=$(curl -sf "$BASE/api/consumption-log" | jq --argjson id "$UNDO_LOG_ID
 [ "$LOG_COUNT" = "1" ] \
   || { echo "FAIL: expected consumption-log row $UNDO_LOG_ID to exist before undo, got $LOG_COUNT"; exit 1; }
 
-echo "== stock/undo: undo the consume (expect the batch restored, log row deleted) (#160) =="
+echo "== products: create a decoy product for the undo tampering check (#224) =="
+TAMPER_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Undo Tamper Target"}' | jq -r .id)
+echo "created product $TAMPER_PRODUCT_ID"
+
+echo "== stock/undo: undo is server-authoritative -- a tampering body is ignored (#224) =="
+# The reproduction from #224: try to erase product B's log while fabricating
+# 999 units of a different product A. Undo must restore exactly the
+# snapshotted batch (product B, amount 4) and never the client-supplied
+# values.
 UNDO_RESPONSE=$(curl -sf -X POST "$BASE/api/stock/undo/$UNDO_LOG_ID" \
   -H 'content-type: application/json' \
-  -d '{"product_id": '"$UNDO_PRODUCT_ID"', "location_id": '"$LOCATION_ID"', "amount": 4, "best_before_date": "'"$FAR_DATE"'"}')
+  -d '{"product_id": '"$TAMPER_PRODUCT_ID"', "amount": 999}')
 echo "$UNDO_RESPONSE" | jq .
 echo "$UNDO_RESPONSE" | jq -e '.amount == 4' > /dev/null \
-  || { echo "FAIL: expected undo to recreate a stock entry with amount=4, got $UNDO_RESPONSE"; exit 1; }
+  || { echo "FAIL: expected undo to restore amount=4 from the snapshot (not the tampering 999), got $UNDO_RESPONSE"; exit 1; }
 [ "$(echo "$UNDO_RESPONSE" | jq -r .product_id)" = "$UNDO_PRODUCT_ID" ] \
-  || { echo "FAIL: expected undo to recreate an entry for product $UNDO_PRODUCT_ID, got $UNDO_RESPONSE"; exit 1; }
+  || { echo "FAIL: expected undo to restore product $UNDO_PRODUCT_ID from the snapshot (not the tampering product), got $UNDO_RESPONSE"; exit 1; }
 [ "$(echo "$UNDO_RESPONSE" | jq -r .location_id)" = "$LOCATION_ID" ] \
-  || { echo "FAIL: expected undo to preserve location_id $LOCATION_ID, got $UNDO_RESPONSE"; exit 1; }
+  || { echo "FAIL: expected undo to preserve location_id $LOCATION_ID from the snapshot, got $UNDO_RESPONSE"; exit 1; }
+
+echo "== stock: the tampering body created no stock for the decoy product (#224) =="
+TAMPER_COUNT=$(curl -sf "$BASE/api/stock?product_id=$TAMPER_PRODUCT_ID" | jq 'length')
+[ "$TAMPER_COUNT" = "0" ] \
+  || { echo "FAIL: expected 0 stock entries for the tampering decoy product, got $TAMPER_COUNT"; exit 1; }
 
 echo "== stock: the batch is back after undo =="
 COUNT=$(curl -sf "$BASE/api/stock?product_id=$UNDO_PRODUCT_ID" | jq 'length')
@@ -594,21 +609,46 @@ LOG_COUNT=$(curl -sf "$BASE/api/consumption-log" | jq --argjson id "$UNDO_LOG_ID
   || { echo "FAIL: expected consumption-log row $UNDO_LOG_ID to be gone after undo, got $LOG_COUNT"; exit 1; }
 
 echo "== stock/undo: undoing the same log a second time fails cleanly (expect 404, already gone) =="
-STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/stock/undo/$UNDO_LOG_ID" \
-  -H 'content-type: application/json' \
-  -d '{"product_id": '"$UNDO_PRODUCT_ID"', "location_id": '"$LOCATION_ID"', "amount": 4, "best_before_date": "'"$FAR_DATE"'"}')
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/stock/undo/$UNDO_LOG_ID")
 [ "$STATUS" = "404" ] \
   || { echo "FAIL: expected 404 undoing an already-undone consumption log id, got $STATUS"; exit 1; }
 
 echo "== stock/undo: unknown log id (expect 404, nothing created) =="
 BEFORE_UNDO_TEST_COUNT=$(curl -sf "$BASE/api/stock?product_id=$UNDO_PRODUCT_ID" | jq 'length')
-STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/stock/undo/999999" \
-  -H 'content-type: application/json' \
-  -d '{"product_id": '"$UNDO_PRODUCT_ID"', "amount": 1}')
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/stock/undo/999999")
 [ "$STATUS" = "404" ] || { echo "FAIL: expected 404 undoing unknown consumption log id, got $STATUS"; exit 1; }
 AFTER_UNDO_TEST_COUNT=$(curl -sf "$BASE/api/stock?product_id=$UNDO_PRODUCT_ID" | jq 'length')
 [ "$AFTER_UNDO_TEST_COUNT" = "$BEFORE_UNDO_TEST_COUNT" ] \
   || { echo "FAIL: expected undo with unknown log id to change nothing, got $BEFORE_UNDO_TEST_COUNT -> $AFTER_UNDO_TEST_COUNT"; exit 1; }
+
+echo "== stock/undo: a bulk-action log is not undoable (expect 409, no stock fabricated) (#224) =="
+# Bulk/delete actions never offered Undo; their log rows carry no snapshot
+# and must be rejected rather than reconstructed from a client body.
+NONUNDO_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Non-Undoable Bulk Test"}' | jq -r .id)
+NONUNDO_ENTRY_ID=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$NONUNDO_PRODUCT_ID"', "amount": 2}' | jq -r .id)
+curl -sf -X POST "$BASE/api/stock/bulk/consume" \
+  -H 'content-type: application/json' \
+  -d '{"entry_ids": ['"$NONUNDO_ENTRY_ID"']}' -o /dev/null
+NONUNDO_LOG_ID=$(curl -sf "$BASE/api/consumption-log" \
+  | jq --argjson pid "$NONUNDO_PRODUCT_ID" 'map(select(.product_id == $pid)) | .[0].id')
+[ "$NONUNDO_LOG_ID" != "null" ] \
+  || { echo "FAIL: expected a consumption-log row for the bulk-consumed entry, got none"; exit 1; }
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/stock/undo/$NONUNDO_LOG_ID" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$NONUNDO_PRODUCT_ID"', "amount": 999}')
+[ "$STATUS" = "409" ] \
+  || { echo "FAIL: expected 409 undoing a non-undoable (bulk-created) log, got $STATUS"; exit 1; }
+NONUNDO_STOCK_COUNT=$(curl -sf "$BASE/api/stock?product_id=$NONUNDO_PRODUCT_ID" | jq 'length')
+[ "$NONUNDO_STOCK_COUNT" = "0" ] \
+  || { echo "FAIL: expected rejected non-undoable undo to fabricate no stock, got $NONUNDO_STOCK_COUNT entries"; exit 1; }
+NONUNDO_LOG_STILL=$(curl -sf "$BASE/api/consumption-log" \
+  | jq --argjson id "$NONUNDO_LOG_ID" '[.[] | select(.id == $id)] | length')
+[ "$NONUNDO_LOG_STILL" = "1" ] \
+  || { echo "FAIL: expected the rejected non-undoable log row to be left intact, got $NONUNDO_LOG_STILL"; exit 1; }
 
 echo "== products: create a product to test shopping-list FK handling on delete (#157) =="
 FK_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
