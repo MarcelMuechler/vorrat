@@ -83,25 +83,36 @@ def _query_stock(
         query = query.filter(StockEntry.product_id == product_id)
     if search:
         query = query.filter(Product.name.ilike(f"%{escape_like(search)}%", escape="\\"))
-    if expiring_within_days is not None:
-        cutoff = date.today() + timedelta(days=expiring_within_days)
-        query = query.filter(
-            StockEntry.best_before_date.isnot(None), StockEntry.best_before_date <= cutoff
-        )
     if category_id is not None:
         query = query.filter(Product.category_id == category_id)
 
     expiring_soon_days = get_app_settings(db).expiring_soon_days
+    # Effective expiry (earlier of best_before_date and opened_at + open
+    # shelf life -- see _effective_expiry) depends on the joined Product's
+    # default_open_shelf_life_days, so it can't be filtered/ordered at the
+    # SQL level without duplicating that date arithmetic in raw SQL. Instead,
+    # every match from the SQL filters above is loaded once and
+    # filtering/sorting/pagination below all happen in Python against the
+    # same _effective_expiry used for status -- keeping it the single source
+    # of truth (#225: an opened entry with no best_before_date used to be
+    # invisible to expiring_within_days even though /api/stats already
+    # counted it as expiring_soon).
+    rows = [
+        (entry, _effective_expiry(entry.best_before_date, entry.opened_at, entry.product.default_open_shelf_life_days))
+        for entry in query.all()
+    ]
+
+    if expiring_within_days is not None:
+        cutoff = date.today() + timedelta(days=expiring_within_days)
+        rows = [(entry, expiry) for entry, expiry in rows if expiry is not None and expiry <= cutoff]
+
     # id is a tiebreaker so pagination stays stable across pages when
-    # multiple entries share the same best_before_date (or are all null).
-    # The joins above (Product, Location) are both to-one from StockEntry's
-    # side, so they never multiply rows -- OFFSET/LIMIT on this query paginate
-    # stock entries correctly without needing a subquery-on-ids workaround.
-    query = query.order_by(StockEntry.best_before_date.asc().nullslast(), StockEntry.id).offset(offset)
-    if limit is not None:
-        query = query.limit(limit)
+    # multiple entries share the same effective expiry (or are all null).
+    rows.sort(key=lambda row: (row[1] is None, row[1] or date.max, row[0].id))
+    rows = rows[offset : offset + limit] if limit is not None else rows[offset:]
+
     items = []
-    for entry in query.all():
+    for entry, expiry in rows:
         items.append(
             StockOverviewItem(
                 **StockEntryRead.model_validate(entry).model_dump(),
@@ -110,12 +121,8 @@ def _query_stock(
                 product_category=entry.product.category_name,
                 product_low_stock_threshold=entry.product.low_stock_threshold,
                 location_name=entry.location.name if entry.location else None,
-                status=_status(
-                    _effective_expiry(
-                        entry.best_before_date, entry.opened_at, entry.product.default_open_shelf_life_days
-                    ),
-                    expiring_soon_days,
-                ),
+                effective_expiry_date=expiry,
+                status=_status(expiry, expiring_soon_days),
             )
         )
     return items
