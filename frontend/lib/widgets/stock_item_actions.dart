@@ -133,8 +133,11 @@ class _StockItemActionsState extends State<StockItemActions> {
         if (_expanded)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            // Wrap, not a Row (same fix as the stock filter row, #199) -- three
+            // buttons with German labels don't fit one line on a narrow phone;
+            // a Row just clips the last one instead of wrapping it down.
+            child: Wrap(
+              alignment: WrapAlignment.spaceEvenly,
               children: [
                 if (widget.canOpen)
                   TextButton.icon(
