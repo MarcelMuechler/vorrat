@@ -165,6 +165,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _downloadBackup() async {
+    final l10n = AppLocalizations.of(context)!;
+    final url = context.read<ApiClient>().backupDownloadUrl();
+    try {
+      await openInBrowser(url.toString());
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotExport('$e'))));
+      }
+    }
+  }
+
+  Future<void> _restoreBackup() async {
+    const typeGroup = XTypeGroup(label: 'backup', extensions: ['db']);
+    final file = await openFile(acceptedTypeGroups: [typeGroup]);
+    if (file == null || !mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.restoreBackupConfirmTitle),
+        content: Text(l10n.restoreBackupConfirmBody),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancelButton)),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.restoreBackupButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final api = context.read<ApiClient>();
+    final stock = context.read<StockProvider>();
+    try {
+      final bytes = await file.readAsBytes();
+      await api.restoreBackup(bytes, file.name);
+      if (!mounted) return;
+      // The restore just swapped the entire database out from under every
+      // provider -- reload rather than trust anything already in memory.
+      await stock.refresh();
+      await stock.loadExpiringSoonDays();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.restoreBackupSuccess)));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotRestore('$e'))));
+      }
+    }
+  }
+
   Future<void> _showImportResult(StockImportResult result) {
     final l10n = AppLocalizations.of(context)!;
     return showDialog<void>(
@@ -385,6 +441,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Divider(),
                   Text(l10n.spoiledThisMonth(_wastedThisMonth!)),
                 ],
+              ]),
+              _section(context, l10n.settingsBackupSection, [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.save_alt_outlined),
+                  title: Text(l10n.downloadBackupTitle),
+                  subtitle: Text(l10n.downloadBackupSubtitle),
+                  onTap: _downloadBackup,
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.settings_backup_restore_outlined),
+                  title: Text(l10n.restoreBackupTitle),
+                  subtitle: Text(l10n.restoreBackupSubtitle),
+                  onTap: _restoreBackup,
+                ),
               ]),
               if (kIsWeb) ...[
                 Text(l10n.pairDeviceHint),

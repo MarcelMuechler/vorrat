@@ -1225,4 +1225,31 @@ STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/api/shopping-lis
 [ "$STATUS" = "422" ] || { echo "FAIL: expected 422 patching shopping list item with NaN amount, got $STATUS"; exit 1; }
 curl -sf -o /dev/null -X DELETE "$BASE/api/shopping-list/$SHOPPING_ENTRY_FOR_NONFINITE"
 
+echo "== backup: download a snapshot (expect a valid SQLite file, #212) =="
+BACKUP_FILE=$(mktemp /tmp/vorrat-smoke-backup.XXXXXX.db)
+curl -sf -o "$BACKUP_FILE" "$BASE/api/backup"
+# grep -a (not a bash command-substitution capture) so the binary content's
+# null bytes don't trip bash's "ignored null byte in input" warning.
+head -c 16 "$BACKUP_FILE" | grep -aq "^SQLite format 3" \
+  || { echo "FAIL: downloaded backup is not a valid SQLite file"; exit 1; }
+
+echo "== backup: restore rejects a non-SQLite upload (expect 400, live data untouched) =="
+BAD_FILE=$(mktemp /tmp/vorrat-smoke-bad.XXXXXX.db)
+echo "not a database" > "$BAD_FILE"
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/backup/restore" -F "file=@$BAD_FILE")
+[ "$STATUS" = "400" ] || { echo "FAIL: expected 400 restoring a non-SQLite file, got $STATUS"; exit 1; }
+rm -f "$BAD_FILE"
+
+echo "== backup: round trip -- data created after the snapshot disappears once it's restored =="
+MARKER_ID=$(curl -sf -X POST "$BASE/api/locations" \
+  -H 'content-type: application/json' -d '{"name": "BackupRoundTripMarker"}' | jq -r .id)
+curl -sf -X POST "$BASE/api/backup/restore" -F "file=@$BACKUP_FILE" | jq .
+rm -f "$BACKUP_FILE"
+MARKER_COUNT=$(curl -sf "$BASE/api/locations" | jq --argjson id "$MARKER_ID" '[.[] | select(.id == $id)] | length')
+[ "$MARKER_COUNT" = "0" ] \
+  || { echo "FAIL: expected marker location $MARKER_ID to be gone after restoring the pre-marker snapshot, got count=$MARKER_COUNT"; exit 1; }
+
+echo "== backup: server still serves normally after the restore (engine reconnected to the swapped file) =="
+curl -sf "$BASE/api/health" | jq .
+
 echo "OK"

@@ -10,6 +10,7 @@ dependencies = [
     "alembic",
     "httpx",
     "pydantic-settings",
+    "python-multipart>=0.0.32",
 ]
 
 [build-system]

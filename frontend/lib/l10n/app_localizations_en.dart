@@ -678,6 +678,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String couldNotRestore(String error) {
+    return 'Could not restore: $error';
+  }
+
+  @override
   String get serverUrlDescription =>
       'Server URL. Leave blank when running inside Home Assistant (same-origin via Ingress). Native apps and local dev need the full URL, e.g. http://192.168.1.20:8099';
 
@@ -729,6 +734,32 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get exportConsumptionLogCsvSubtitle =>
       'Download usage and waste history as a spreadsheet';
+
+  @override
+  String get downloadBackupTitle => 'Download backup';
+
+  @override
+  String get downloadBackupSubtitle => 'Save a full snapshot of the database';
+
+  @override
+  String get restoreBackupTitle => 'Restore from file';
+
+  @override
+  String get restoreBackupSubtitle =>
+      'Replace all current data with a backup file';
+
+  @override
+  String get restoreBackupConfirmTitle => 'Restore backup?';
+
+  @override
+  String get restoreBackupConfirmBody =>
+      'This replaces all current data with the contents of the selected file. This cannot be undone.';
+
+  @override
+  String get restoreBackupButton => 'Restore';
+
+  @override
+  String get restoreBackupSuccess => 'Backup restored';
 
   @override
   String get importResultTitle => 'Import complete';
@@ -995,6 +1026,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsDataSection => 'Data';
+
+  @override
+  String get settingsBackupSection => 'Backup';
 
   @override
   String get pickDateLabel => 'Pick date';

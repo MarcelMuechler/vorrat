@@ -1190,6 +1190,12 @@ abstract class AppLocalizations {
   /// **'Could not import: {error}'**
   String couldNotImport(String error);
 
+  /// No description provided for @couldNotRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not restore: {error}'**
+  String couldNotRestore(String error);
+
   /// No description provided for @serverUrlDescription.
   ///
   /// In en, this message translates to:
@@ -1279,6 +1285,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Download usage and waste history as a spreadsheet'**
   String get exportConsumptionLogCsvSubtitle;
+
+  /// No description provided for @downloadBackupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Download backup'**
+  String get downloadBackupTitle;
+
+  /// No description provided for @downloadBackupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save a full snapshot of the database'**
+  String get downloadBackupSubtitle;
+
+  /// No description provided for @restoreBackupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from file'**
+  String get restoreBackupTitle;
+
+  /// No description provided for @restoreBackupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace all current data with a backup file'**
+  String get restoreBackupSubtitle;
+
+  /// No description provided for @restoreBackupConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore backup?'**
+  String get restoreBackupConfirmTitle;
+
+  /// No description provided for @restoreBackupConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This replaces all current data with the contents of the selected file. This cannot be undone.'**
+  String get restoreBackupConfirmBody;
+
+  /// No description provided for @restoreBackupButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get restoreBackupButton;
+
+  /// No description provided for @restoreBackupSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup restored'**
+  String get restoreBackupSuccess;
 
   /// No description provided for @importResultTitle.
   ///
@@ -1579,6 +1633,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Data'**
   String get settingsDataSection;
+
+  /// No description provided for @settingsBackupSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup'**
+  String get settingsBackupSection;
 
   /// No description provided for @pickDateLabel.
   ///

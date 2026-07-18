@@ -686,6 +686,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String couldNotRestore(String error) {
+    return 'Wiederherstellung fehlgeschlagen: $error';
+  }
+
+  @override
   String get serverUrlDescription =>
       'Server-URL. Leer lassen, wenn innerhalb von Home Assistant (gleicher Ursprung via Ingress) ausgeführt. Native Apps und lokale Entwicklung benötigen die vollständige URL, z. B. http://192.168.1.20:8099';
 
@@ -737,6 +742,33 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get exportConsumptionLogCsvSubtitle =>
       'Verbrauchs- und Verlustverlauf als Tabelle herunterladen';
+
+  @override
+  String get downloadBackupTitle => 'Backup herunterladen';
+
+  @override
+  String get downloadBackupSubtitle =>
+      'Einen vollständigen Snapshot der Datenbank speichern';
+
+  @override
+  String get restoreBackupTitle => 'Aus Datei wiederherstellen';
+
+  @override
+  String get restoreBackupSubtitle =>
+      'Alle aktuellen Daten durch eine Backup-Datei ersetzen';
+
+  @override
+  String get restoreBackupConfirmTitle => 'Backup wiederherstellen?';
+
+  @override
+  String get restoreBackupConfirmBody =>
+      'Dadurch werden alle aktuellen Daten durch den Inhalt der ausgewählten Datei ersetzt. Dies kann nicht rückgängig gemacht werden.';
+
+  @override
+  String get restoreBackupButton => 'Wiederherstellen';
+
+  @override
+  String get restoreBackupSuccess => 'Backup wiederhergestellt';
 
   @override
   String get importResultTitle => 'Import abgeschlossen';
@@ -1003,6 +1035,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsDataSection => 'Daten';
+
+  @override
+  String get settingsBackupSection => 'Backup';
 
   @override
   String get pickDateLabel => 'Datum wählen';

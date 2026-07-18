@@ -349,6 +349,24 @@ class ApiClient {
     return StockImportResult.fromJson(jsonDecode(res.body));
   }
 
+  /// Same approach as [exportStockCsvUrl] -- downloaded by opening the URL
+  /// directly (server sets Content-Disposition) rather than fetched here.
+  Uri backupDownloadUrl() {
+    final uri = _uri('/api/backup');
+    return uri.hasScheme ? uri : Uri.base.resolveUri(uri);
+  }
+
+  /// Uploads a backup file to replace the live database. Sent as multipart
+  /// (unlike [importStockCsv]'s plain body) because the backend reads it via
+  /// FastAPI's UploadFile, and the payload is binary, not text.
+  Future<void> restoreBackup(List<int> bytes, String filename) async {
+    final request = http.MultipartRequest('POST', _uri('/api/backup/restore'))
+      ..files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+    final streamed = await request.send().timeout(_timeout);
+    final res = await http.Response.fromStream(streamed);
+    _checkOk(res);
+  }
+
   Future<int> getExpiringSoonDays() async {
     final res = await _get('/api/settings');
     _checkOk(res);
