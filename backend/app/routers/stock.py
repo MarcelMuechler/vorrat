@@ -3,8 +3,10 @@ import io
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, update
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, contains_eager, joinedload
 
 from app.db import get_db
@@ -204,6 +206,116 @@ def _resolve_product(
     return product
 
 
+# Keeps one oversized upload from being buffered whole in memory -- checked
+# both against the (possibly absent or lying) Content-Length header up front
+# and again while actually reading the body, see _read_capped_body. 5 MB
+# comfortably covers even a large household's stock export/import.
+IMPORT_CSV_MAX_BYTES = 5 * 1024 * 1024
+# A pathological file could otherwise turn `errors` itself into an unbounded
+# response body; cap how many bad rows we report back.
+IMPORT_CSV_MAX_ERRORS = 200
+
+
+async def _read_capped_body(request: Request, max_bytes: int) -> bytes:
+    content_length = request.headers.get("content-length")
+    if content_length is not None:
+        try:
+            claimed = int(content_length)
+        except ValueError:
+            claimed = None
+        if claimed is not None and claimed > max_bytes:
+            raise HTTPException(413, f"CSV upload exceeds the {max_bytes}-byte limit")
+
+    chunks = []
+    total = 0
+    async for chunk in request.stream():
+        total += len(chunk)
+        if total > max_bytes:
+            raise HTTPException(413, f"CSV upload exceeds the {max_bytes}-byte limit")
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def _import_stock_csv_sync(db: Session, body: bytes) -> dict:
+    """Does the actual parsing + row-by-row DB writes -- run off the event
+    loop via run_in_threadpool by the route below, since a large CSV parsed
+    and flushed synchronously here would otherwise stall unrelated requests.
+
+    Every row is attempted independently: a bad row is recorded in `errors`
+    (row numbers are 1-based over the data rows, i.e. excluding the header;
+    capped at IMPORT_CSV_MAX_ERRORS) and does not stop the rest of the file
+    from importing. A parse-level failure (bad encoding, malformed CSV) or a
+    database error aborts the whole import and rolls back everything flushed
+    so far -- partial imports would be worse than a clean failure that the
+    caller can just retry."""
+    try:
+        text = body.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise HTTPException(400, f"CSV must be UTF-8 encoded: {exc}") from None
+
+    location_cache: dict[str, Location] = {}
+    product_cache: dict[str, Product] = {}
+    imported = 0
+    errors = []
+
+    try:
+        reader = csv.DictReader(io.StringIO(text))
+        for row_number, row in enumerate(reader, start=1):
+            try:
+                name = (row.get("product_name") or "").strip()
+                if not name:
+                    raise ValueError("product_name is required")
+
+                barcode = normalize_barcode(row.get("barcode"))
+
+                amount_raw = (row.get("amount") or "").strip()
+                if not amount_raw:
+                    raise ValueError("amount is required")
+                try:
+                    amount = float(amount_raw)
+                except ValueError:
+                    raise ValueError(f"invalid amount: {amount_raw!r}") from None
+                if amount <= 0:
+                    raise ValueError(f"amount must be greater than 0: {amount_raw!r}")
+
+                best_before_raw = (row.get("best_before_date") or "").strip()
+                best_before_date = None
+                if best_before_raw:
+                    try:
+                        best_before_date = date.fromisoformat(best_before_raw)
+                    except ValueError:
+                        raise ValueError(f"invalid best_before_date: {best_before_raw!r}") from None
+
+                location_raw = (row.get("location") or "").strip()
+                location_id = None
+                if location_raw:
+                    location_id = _resolve_location(db, location_raw, location_cache).id
+
+                product = _resolve_product(db, name, barcode, product_cache)
+
+                entry = StockEntry(
+                    product_id=product.id,
+                    location_id=location_id,
+                    amount=amount,
+                    best_before_date=best_before_date,
+                )
+                db.add(entry)
+                db.flush()
+                imported += 1
+            except ValueError as exc:
+                if len(errors) < IMPORT_CSV_MAX_ERRORS:
+                    errors.append({"row": row_number, "error": str(exc)})
+    except csv.Error as exc:
+        db.rollback()
+        raise HTTPException(400, f"Malformed CSV: {exc}") from None
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(400, "Import failed due to a database error; no rows were committed") from None
+
+    db.commit()
+    return {"imported": imported, "errors": errors}
+
+
 @router.post("/import.csv", response_model=StockImportResult)
 async def import_stock_csv(request: Request, db: Session = Depends(get_db)):
     """Accepts the CSV as a raw request body (not multipart) -- the simplest
@@ -212,65 +324,14 @@ async def import_stock_csv(request: Request, db: Session = Depends(get_db)):
     round-trips; the trailing `status` column from the export is derived and
     simply ignored on the way back in.
 
-    Every row is attempted independently: a bad row is recorded in `errors`
-    (row numbers are 1-based over the data rows, i.e. excluding the header)
-    and does not stop the rest of the file from importing."""
-    body = await request.body()
-    text = body.decode("utf-8-sig")
-    reader = csv.DictReader(io.StringIO(text))
-
-    location_cache: dict[str, Location] = {}
-    product_cache: dict[str, Product] = {}
-    imported = 0
-    errors = []
-
-    for row_number, row in enumerate(reader, start=1):
-        try:
-            name = (row.get("product_name") or "").strip()
-            if not name:
-                raise ValueError("product_name is required")
-
-            barcode = normalize_barcode(row.get("barcode"))
-
-            amount_raw = (row.get("amount") or "").strip()
-            if not amount_raw:
-                raise ValueError("amount is required")
-            try:
-                amount = float(amount_raw)
-            except ValueError:
-                raise ValueError(f"invalid amount: {amount_raw!r}") from None
-            if amount <= 0:
-                raise ValueError(f"amount must be greater than 0: {amount_raw!r}")
-
-            best_before_raw = (row.get("best_before_date") or "").strip()
-            best_before_date = None
-            if best_before_raw:
-                try:
-                    best_before_date = date.fromisoformat(best_before_raw)
-                except ValueError:
-                    raise ValueError(f"invalid best_before_date: {best_before_raw!r}") from None
-
-            location_raw = (row.get("location") or "").strip()
-            location_id = None
-            if location_raw:
-                location_id = _resolve_location(db, location_raw, location_cache).id
-
-            product = _resolve_product(db, name, barcode, product_cache)
-
-            entry = StockEntry(
-                product_id=product.id,
-                location_id=location_id,
-                amount=amount,
-                best_before_date=best_before_date,
-            )
-            db.add(entry)
-            db.flush()
-            imported += 1
-        except ValueError as exc:
-            errors.append({"row": row_number, "error": str(exc)})
-
-    db.commit()
-    return {"imported": imported, "errors": errors}
+    Limited to IMPORT_CSV_MAX_BYTES (5 MB) -- returns 413 if the upload is
+    (or turns out to be) larger, checked both via Content-Length up front and
+    while streaming the body itself. Parsing and DB writes run in a worker
+    thread so a large-but-within-limit file doesn't block the event loop; any
+    parse or database error rolls back the whole import cleanly (see
+    _import_stock_csv_sync)."""
+    body = await _read_capped_body(request, IMPORT_CSV_MAX_BYTES)
+    return await run_in_threadpool(_import_stock_csv_sync, db, body)
 
 
 @router.post("", response_model=StockEntryRead, status_code=201)
