@@ -59,9 +59,34 @@ def _validate_product_references(db: Session, category_id: int | None, default_l
         raise HTTPException(404, "Location not found")
 
 
+def _barcode_in_use(db: Session, code: str, exclude_product_id: int | None = None) -> bool:
+    """True if `code` already exists anywhere in the single global barcode
+    namespace (#223) -- as any product's primary `Product.barcode` or any
+    product's alternate `ProductBarcode.code`. The two tables have their own
+    per-table unique constraints but nothing spanning them, so without this
+    the same code could be one product's primary and another's alternate;
+    since barcode.py's lookup checks primary codes first, the alternate would
+    be silently shadowed and scans would resolve to the wrong product.
+
+    `exclude_product_id` skips a product's own rows so a no-op re-save of an
+    unchanged barcode doesn't collide with itself. This is a pragmatic
+    application-level guard; each write still commits under a try/except
+    IntegrityError to stay race-safe as far as the per-table constraints
+    permit (a single-table rework would be a large migration for little gain
+    on a self-hosted, single-user app)."""
+    primary_q = db.query(Product.id).filter(Product.barcode == code)
+    alt_q = db.query(ProductBarcode.id).filter(ProductBarcode.code == code)
+    if exclude_product_id is not None:
+        primary_q = primary_q.filter(Product.id != exclude_product_id)
+        alt_q = alt_q.filter(ProductBarcode.product_id != exclude_product_id)
+    return db.query(primary_q.exists()).scalar() or db.query(alt_q.exists()).scalar()
+
+
 @router.post("", response_model=ProductRead, status_code=201)
 def create_product(payload: ProductCreate, db: Session = Depends(get_db)):
     _validate_product_references(db, payload.category_id, payload.default_location_id)
+    if payload.barcode is not None and _barcode_in_use(db, payload.barcode):
+        raise HTTPException(409, "A product with this barcode already exists")
     product = Product(**payload.model_dump())
     db.add(product)
     try:
@@ -80,6 +105,10 @@ def update_product(product_id: int, payload: ProductUpdate, db: Session = Depend
         raise HTTPException(404, "Product not found")
     updates = payload.model_dump(exclude_unset=True)
     _validate_product_references(db, updates.get("category_id"), updates.get("default_location_id"))
+    if "barcode" in updates and updates["barcode"] is not None and _barcode_in_use(
+        db, updates["barcode"], exclude_product_id=product_id
+    ):
+        raise HTTPException(409, "A product with this barcode already exists")
     for key, value in updates.items():
         setattr(product, key, value)
     try:
@@ -100,7 +129,11 @@ def add_product_barcode(product_id: int, payload: ProductBarcodeCreate, db: Sess
     product = db.get(Product, product_id)
     if not product:
         raise HTTPException(404, "Product not found")
-    if product.barcode == payload.code:
+    # Barcodes are one global namespace (#223): reject a code already claimed
+    # by any product's primary barcode (including this product's own) or any
+    # other product's alternate code, so /api/barcode/{code} can never resolve
+    # to the wrong product.
+    if _barcode_in_use(db, payload.code):
         raise HTTPException(409, "A product with this barcode already exists")
     db.add(ProductBarcode(product_id=product_id, code=payload.code))
     try:
