@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.18.2](https://github.com/MarcelMuechler/Vorrat/compare/v0.18.1...v0.18.2) (2026-07-18)
+
+
+### Bug Fixes
+
+* **backend:** add location name validation and normalization ([6308cf7](https://github.com/MarcelMuechler/Vorrat/commit/6308cf70ec7c491a8f543f186477192c5debada3))
+* **backend:** bound CSV import size and move it off the event loop ([e2c5eaa](https://github.com/MarcelMuechler/Vorrat/commit/e2c5eaaebad14415eb56fe13142aa2c9e9e82af8))
+* **backend:** enforce global barcode uniqueness across primary and alternate codes ([34be439](https://github.com/MarcelMuechler/Vorrat/commit/34be43965334bf81829fa3046b99434d95f1d959)), closes [#223](https://github.com/MarcelMuechler/Vorrat/issues/223)
+* **backend:** make stock undo server-authoritative ([b30f54a](https://github.com/MarcelMuechler/Vorrat/commit/b30f54a11cd92473787aede71846d8db5f631438)), closes [#224](https://github.com/MarcelMuechler/Vorrat/issues/224)
+* **backend:** preserve purchased_date/opened_at/price/quantity_unit in stock CSV round-trip ([28bb425](https://github.com/MarcelMuechler/Vorrat/commit/28bb425aecae1124add17e875e27429131f7aeb6))
+* **backend:** reject NaN and infinity in float request schemas ([095a3fc](https://github.com/MarcelMuechler/Vorrat/commit/095a3fc463806364b959f4d93450455af73178c9))
+* **backend:** reject NaN and infinity in float request schemas ([ccaa60d](https://github.com/MarcelMuechler/Vorrat/commit/ccaa60db1cbbcf2e347ea17ee48bc13d4782cd4c))
+* **backend:** use effective expiry consistently in filters and response ([3056fe3](https://github.com/MarcelMuechler/Vorrat/commit/3056fe3a1802e2f1e568e9361806ce00ac9b4d15)), closes [#225](https://github.com/MarcelMuechler/Vorrat/issues/225)
+* **frontend:** apply a bounded timeout to every ApiClient request ([39c6747](https://github.com/MarcelMuechler/Vorrat/commit/39c67477a37f1b36698c5e6e81cfa1e539b7ffd2)), closes [#233](https://github.com/MarcelMuechler/Vorrat/issues/233)
+* **frontend:** bucket and display expiry by effective_expiry_date ([1fa3820](https://github.com/MarcelMuechler/Vorrat/commit/1fa382032a90022e7ea7ba7dfcc4be8c3930c925)), closes [#225](https://github.com/MarcelMuechler/Vorrat/issues/225)
+* **frontend:** drop client stock data from undo call ([d8f68b9](https://github.com/MarcelMuechler/Vorrat/commit/d8f68b9f4ff50816a0f900a9fd236b0157d8afd1)), closes [#224](https://github.com/MarcelMuechler/Vorrat/issues/224)
+* **frontend:** guard StockProvider.refresh against stale slow responses ([4b40b13](https://github.com/MarcelMuechler/Vorrat/commit/4b40b13181ef9de55911894fbcd8af9500293af5))
+* **frontend:** icon-only fallback for product batch action row ([d5ffbec](https://github.com/MarcelMuechler/Vorrat/commit/d5ffbece48ec68316d7309b2026b2e9818816903))
+* **frontend:** icon-only fallback for stock item action row ([21ebe28](https://github.com/MarcelMuechler/Vorrat/commit/21ebe286dbc399897506893dd885eab04ed4225f))
+* **frontend:** keep stock filter pills on one line ([bca877c](https://github.com/MarcelMuechler/Vorrat/commit/bca877c5d784ca216881c1bc5652d581b7570d8c))
+
+
+### Performance Improvements
+
+* **backend:** eliminate N+1 barcode queries in GET /api/products ([abb4d46](https://github.com/MarcelMuechler/Vorrat/commit/abb4d46aac750666227a924d2f48893ea44d9da3))
+* **backend:** reuse a lifecycle-managed HTTP client for OFF lookups ([6d21c94](https://github.com/MarcelMuechler/Vorrat/commit/6d21c941125e19068d533715634ed0f50ef263ee))
+
 ## [0.18.1](https://github.com/MarcelMuechler/Vorrat/compare/v0.18.0...v0.18.1) (2026-07-18)
 
 
