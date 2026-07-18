@@ -767,12 +767,12 @@ RESTORED_SPACE=$(curl -sf "$BASE/api/products/$FORMULA_SPACE_ID" | jq -r .name)
 [ "$RESTORED_SPACE" = "=Spaced Formula" ] || { echo "FAIL: expected product name '=Spaced Formula' after round-trip (leading spaces trimmed by API), got '$RESTORED_SPACE'"; exit 1; }
 
 echo "== CSV formula injection: test consumption-log export escapes formula-prefix cells (#226) =="
-# Consume one to generate a log entry
-curl -sf -X POST "$BASE/api/stock" \
+# Add a new stock entry specifically for testing consumption with special characters
+FORMULA_UNIT_ENTRY=$(curl -sf -X POST "$BASE/api/stock" \
   -H 'content-type: application/json' \
-  -d '{"product_id": '"$FORMULA_PLUS_ID"', "location_id": '"$FORMULA_LOCATION_ID"', "amount": 1, "quantity_unit": "+dangerous_unit"}' > /dev/null
-STOCK_ID=$(curl -sf "$BASE/api/stock?product_id=$FORMULA_PLUS_ID&amount=1" | jq -r '.[0].id')
-curl -sf -X POST "$BASE/api/stock/$STOCK_ID/consume" \
+  -d '{"product_id": '"$FORMULA_PLUS_ID"', "location_id": '"$FORMULA_LOCATION_ID"', "amount": 1}' | jq -r .id)
+# Consume it with a reason that has a formula prefix
+curl -sf -X POST "$BASE/api/stock/$FORMULA_UNIT_ENTRY/consume" \
   -H 'content-type: application/json' \
   -d '{"amount": 1, "reason": "=DeleteAllFiles"}' > /dev/null
 
