@@ -606,8 +606,12 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   Widget _itemSubtitle(BuildContext context, StockItem item) {
     return Text([
       if (item.locationName != null) item.locationName!,
-      if (item.bestBeforeDate != null)
-        relativeLabel(context, item.bestBeforeDate!, RelativeDateKind.expiry),
+      // effectiveExpiryDate (#225), not bestBeforeDate directly -- it's the
+      // date [item.status] (the colored dot next to this row) is actually
+      // based on, so an opened batch with no best-before date still gets a
+      // countdown here instead of silently showing nothing.
+      if (item.effectiveExpiryDate != null)
+        relativeLabel(context, item.effectiveExpiryDate!, RelativeDateKind.expiry),
       if (item.purchasedDate != null)
         relativeLabel(context, item.purchasedDate!, RelativeDateKind.purchased),
       if (item.openedAt != null) relativeLabel(context, item.openedAt!, RelativeDateKind.opened),

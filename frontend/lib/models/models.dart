@@ -116,6 +116,13 @@ class StockItem {
   final double? lowStockThreshold;
   final String? locationName;
   final String status; // ok | expiring_soon | expired
+  // Canonical expiry the backend derives [status] from (#225): the earlier
+  // of bestBeforeDate and openedAt + the product's open shelf life, or just
+  // bestBeforeDate if the batch was never opened/has no BBD. Use this (not
+  // bestBeforeDate) for anything that buckets/sorts/labels by expiry, so an
+  // opened batch with no best-before date isn't dropped into a "no date"
+  // bucket its own status already disagrees with.
+  final DateTime? effectiveExpiryDate;
 
   StockItem({
     required this.id,
@@ -132,6 +139,7 @@ class StockItem {
     this.category,
     this.lowStockThreshold,
     this.locationName,
+    this.effectiveExpiryDate,
   });
 
   factory StockItem.fromJson(Map<String, dynamic> json) => StockItem(
@@ -153,6 +161,9 @@ class StockItem {
         lowStockThreshold: (json['product_low_stock_threshold'] as num?)?.toDouble(),
         locationName: json['location_name'],
         status: json['status'],
+        effectiveExpiryDate: json['effective_expiry_date'] != null
+            ? DateTime.parse(json['effective_expiry_date'])
+            : null,
       );
 }
 

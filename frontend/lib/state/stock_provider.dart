@@ -77,7 +77,7 @@ class StockProvider extends ChangeNotifier {
     final sorted = [...items];
     switch (sort) {
       case StockSort.bestBeforeDate:
-        break; // already the API's default order
+        break; // already the API's default order (by effective expiry, #225)
       case StockSort.name:
         sorted.sort((a, b) => a.productName.compareTo(b.productName));
       case StockSort.amount:
@@ -130,9 +130,13 @@ class StockProvider extends ChangeNotifier {
     }).toList();
   }
 
-  /// [sortedItems] bucketed by best-before date -- expired / today / this
-  /// week (2-7 days out) / later / no best-before date at all. Only
-  /// non-empty buckets are included.
+  /// [sortedItems] bucketed by effective expiry date -- expired / today /
+  /// this week (2-7 days out) / later / no expiry date at all. Uses
+  /// [StockItem.effectiveExpiryDate] rather than bestBeforeDate directly
+  /// (#225): an opened batch with no best-before date still has a real
+  /// expiry (opened_at + the product's open shelf life) that already drives
+  /// its status on the backend, so it belongs in the matching bucket instead
+  /// of always landing in "no date". Only non-empty buckets are included.
   List<ExpiryBucket> get expiryBreakdown {
     final expired = <StockItem>[];
     final today = <StockItem>[];
@@ -142,12 +146,12 @@ class StockProvider extends ChangeNotifier {
     final todayDate = DateTime.now();
     final todayOnly = DateTime(todayDate.year, todayDate.month, todayDate.day);
     for (final item in sortedItems) {
-      final bbd = item.bestBeforeDate;
-      if (bbd == null) {
+      final expiry = item.effectiveExpiryDate;
+      if (expiry == null) {
         noDate.add(item);
         continue;
       }
-      final days = DateTime(bbd.year, bbd.month, bbd.day).difference(todayOnly).inDays;
+      final days = DateTime(expiry.year, expiry.month, expiry.day).difference(todayOnly).inDays;
       if (days < 0) {
         expired.add(item);
       } else if (days == 0) {
