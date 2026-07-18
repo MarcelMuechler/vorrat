@@ -1084,4 +1084,76 @@ else
   echo "skip: no Flutter static build bundled locally (index route only exists once vorrat/Dockerfile copies app/static/ in)"
 fi
 
+echo "== stock: reject Infinity as amount (expect 422) (#228) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$PRODUCT_ID"', "amount": "Infinity"}')
+[ "$STATUS" = "422" ] || { echo "FAIL: expected 422 rejecting Infinity as amount, got $STATUS"; exit 1; }
+
+echo "== stock: reject -Infinity as price (expect 422) (#228) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$PRODUCT_ID"', "amount": 1.5, "price": "-Infinity"}')
+[ "$STATUS" = "422" ] || { echo "FAIL: expected 422 rejecting -Infinity as price, got $STATUS"; exit 1; }
+
+echo "== stock: reject NaN as amount (expect 422) (#228) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$PRODUCT_ID"', "amount": "NaN"}')
+[ "$STATUS" = "422" ] || { echo "FAIL: expected 422 rejecting NaN as amount, got $STATUS"; exit 1; }
+
+echo "== stock: patch entry rejecting Infinity as amount (expect 422) (#228) =="
+PRICE_ENTRY_FOR_NONFINITE=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$PRODUCT_ID"', "amount": 2.0}' | jq -r .id)
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/api/stock/$PRICE_ENTRY_FOR_NONFINITE" \
+  -H 'content-type: application/json' \
+  -d '{"amount": "Infinity"}')
+[ "$STATUS" = "422" ] || { echo "FAIL: expected 422 patching stock entry with Infinity amount, got $STATUS"; exit 1; }
+curl -sf -o /dev/null -X DELETE "$BASE/api/stock/$PRICE_ENTRY_FOR_NONFINITE"
+
+echo "== stock: consume rejecting NaN as amount (expect 422) (#228) =="
+CONSUME_ENTRY_FOR_NONFINITE=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$PRODUCT_ID"', "amount": 3.0}' | jq -r .id)
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/stock/$CONSUME_ENTRY_FOR_NONFINITE/consume" \
+  -H 'content-type: application/json' \
+  -d '{"amount": "NaN"}')
+[ "$STATUS" = "422" ] || { echo "FAIL: expected 422 consuming with NaN amount, got $STATUS"; exit 1; }
+curl -sf -o /dev/null -X DELETE "$BASE/api/stock/$CONSUME_ENTRY_FOR_NONFINITE"
+
+echo "== products: reject Infinity as low_stock_threshold (expect 422) (#228) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "NonfiniteTest", "low_stock_threshold": "Infinity"}')
+[ "$STATUS" = "422" ] || { echo "FAIL: expected 422 rejecting Infinity as low_stock_threshold, got $STATUS"; exit 1; }
+
+echo "== products: reject NaN as target_stock_level (expect 422) (#228) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "NonfiniteTest", "target_stock_level": "NaN"}')
+[ "$STATUS" = "422" ] || { echo "FAIL: expected 422 rejecting NaN as target_stock_level, got $STATUS"; exit 1; }
+
+echo "== products: patch rejecting -Infinity as low_stock_threshold (expect 422) (#228) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/api/products/$PRODUCT_ID" \
+  -H 'content-type: application/json' \
+  -d '{"low_stock_threshold": "-Infinity"}')
+[ "$STATUS" = "422" ] || { echo "FAIL: expected 422 patching product with -Infinity as low_stock_threshold, got $STATUS"; exit 1; }
+
+echo "== shopping-list: reject Infinity as amount (expect 422) (#228) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/shopping-list" \
+  -H 'content-type: application/json' \
+  -d '{"name": "ShoppingTest", "amount": "Infinity"}')
+[ "$STATUS" = "422" ] || { echo "FAIL: expected 422 rejecting Infinity as shopping list amount, got $STATUS"; exit 1; }
+
+echo "== shopping-list: patch rejecting NaN as amount (expect 422) (#228) =="
+SHOPPING_ENTRY_FOR_NONFINITE=$(curl -sf -X POST "$BASE/api/shopping-list" \
+  -H 'content-type: application/json' \
+  -d '{"name": "ShoppingTest", "amount": 1.5}' | jq -r .id)
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/api/shopping-list/$SHOPPING_ENTRY_FOR_NONFINITE" \
+  -H 'content-type: application/json' \
+  -d '{"amount": "NaN"}')
+[ "$STATUS" = "422" ] || { echo "FAIL: expected 422 patching shopping list item with NaN amount, got $STATUS"; exit 1; }
+curl -sf -o /dev/null -X DELETE "$BASE/api/shopping-list/$SHOPPING_ENTRY_FOR_NONFINITE"
+
 echo "OK"
