@@ -8,8 +8,10 @@ Widget _wrap({
   required VoidCallback onOpen,
   required Future<bool> Function(double, String) onConsume,
   required Future<bool> Function() onDelete,
+  Locale? locale,
 }) =>
     MaterialApp(
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
@@ -185,5 +187,42 @@ void main() {
     expect(consumedAmount, 2);
     expect(consumedReason, 'spoiled');
     expect(deleteCalled, isFalse);
+  });
+
+  // Regression test: the Open/Use/Spoil Row used to clip the last button's
+  // label on a narrow phone (the trash icon showed with no text) since a Row
+  // has nowhere to put content that doesn't fit -- three buttons with the
+  // longer German labels overflowed even though English ones happened to
+  // fit. The generic "app boots, tap through the tabs" overflow test never
+  // caught this because it never taps a stock item open with real data, so
+  // this widget's expanded state was never actually rendered.
+  testWidgets('all three action buttons fit on a narrow German phone screen (canOpen: true)', (
+    tester,
+  ) async {
+    final originalSize = tester.view.physicalSize;
+    final originalRatio = tester.view.devicePixelRatio;
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.physicalSize = originalSize;
+      tester.view.devicePixelRatio = originalRatio;
+    });
+
+    await tester.pumpWidget(
+      _wrap(
+        canOpen: true,
+        onOpen: () {},
+        onConsume: (_, _) async => true,
+        onDelete: () async => true,
+        locale: const Locale('de'),
+      ),
+    );
+
+    await tester.tap(find.text('Jam'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Als geöffnet markieren'), findsOneWidget);
+    expect(find.text('Verbraucht'), findsOneWidget);
+    expect(find.text('Verdorben'), findsOneWidget);
   });
 }
