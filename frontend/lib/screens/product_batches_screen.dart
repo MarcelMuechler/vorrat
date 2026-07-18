@@ -291,8 +291,13 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    soonest.bestBeforeDate != null
-                        ? relativeLabel(context, soonest.bestBeforeDate!, RelativeDateKind.expiry)
+                    // effectiveExpiryDate (#225), not bestBeforeDate directly --
+                    // it's what [soonest.status] (and thus this banner's color)
+                    // is actually based on, so an opened batch with no
+                    // best-before date gets its real countdown instead of
+                    // falling back to a plain "OK" here.
+                    soonest.effectiveExpiryDate != null
+                        ? relativeLabel(context, soonest.effectiveExpiryDate!, RelativeDateKind.expiry)
                         : l10n.statusOk,
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
                   ),
