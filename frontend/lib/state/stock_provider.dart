@@ -63,6 +63,14 @@ class StockProvider extends ChangeNotifier {
   StockViewMode viewMode = StockViewMode.flat;
   int expiringSoonDays = 3;
 
+  // Monotonic request generation (#233): the debounced search in
+  // stock_overview_screen.dart can fire overlapping refreshes without
+  // waiting for the previous one, and a slower older request can otherwise
+  // complete after a newer one and overwrite [items]/[error] with stale
+  // results. Each refresh() call claims the next generation and only applies
+  // its outcome if it's still the most recent one in flight.
+  int _refreshGeneration = 0;
+
   /// [items] sorted client-side -- the list is already fully fetched, and
   /// re-querying the API just to change ordering would be wasteful.
   List<StockItem> get sortedItems {
@@ -176,21 +184,29 @@ class StockProvider extends ChangeNotifier {
   }
 
   Future<void> refresh() async {
+    final generation = ++_refreshGeneration;
     loading = true;
     error = null;
     notifyListeners();
     try {
-      items = await api.listStock(
+      final result = await api.listStock(
         expiringWithinDays: expiringWithinDaysFilter,
         locationId: locationIdFilter,
         categoryId: categoryIdFilter,
         search: searchFilter.isEmpty ? null : searchFilter,
       );
+      // A newer refresh() has since started; let its own result win instead
+      // of overwriting it with this now-stale response.
+      if (generation != _refreshGeneration) return;
+      items = result;
     } catch (e) {
+      if (generation != _refreshGeneration) return;
       error = '$e';
     } finally {
-      loading = false;
-      notifyListeners();
+      if (generation == _refreshGeneration) {
+        loading = false;
+        notifyListeners();
+      }
     }
   }
 
