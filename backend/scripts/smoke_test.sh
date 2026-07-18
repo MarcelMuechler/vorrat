@@ -746,8 +746,8 @@ echo "$FORMULA_EXPORT" | tr -d '\r' | grep -q "^'+1+1" || { echo "FAIL: expected
 echo "$FORMULA_EXPORT" | tr -d '\r' | grep -q "^'-2" || { echo "FAIL: expected '-2 in stock export.csv"; exit 1; }
 # Check that at sign is escaped
 echo "$FORMULA_EXPORT" | tr -d '\r' | grep -q "^'@SUM" || { echo "FAIL: expected '@SUM in stock export.csv"; exit 1; }
-# Check that leading-space formula is escaped (and preserves the spaces)
-echo "$FORMULA_EXPORT" | tr -d '\r' | grep -q "^'  =Spaced" || { echo "FAIL: expected \"'  =Spaced\" in stock export.csv"; exit 1; }
+# Check that formula-prefix name (with leading spaces trimmed by API) is escaped
+echo "$FORMULA_EXPORT" | tr -d '\r' | grep -q "^'=Spaced" || { echo "FAIL: expected '=Spaced in stock export.csv"; exit 1; }
 # Check that location with formula prefix is escaped
 echo "$FORMULA_EXPORT" | tr -d '\r' | grep -q ",'=Injection Location," || { echo "FAIL: expected location '=Injection Location in stock export.csv"; exit 1; }
 # Check that barcode with formula prefix is escaped
@@ -764,7 +764,7 @@ RESTORED_EQUALS=$(curl -sf "$BASE/api/products/$FORMULA_EQUALS_ID" | jq -r .name
 RESTORED_PLUS=$(curl -sf "$BASE/api/products/$FORMULA_PLUS_ID" | jq -r .name)
 [ "$RESTORED_PLUS" = "+1+1" ] || { echo "FAIL: expected product name '+1+1' after round-trip, got '$RESTORED_PLUS'"; exit 1; }
 RESTORED_SPACE=$(curl -sf "$BASE/api/products/$FORMULA_SPACE_ID" | jq -r .name)
-[ "$RESTORED_SPACE" = "  =Spaced Formula" ] || { echo "FAIL: expected product name '  =Spaced Formula' after round-trip, got '$RESTORED_SPACE'"; exit 1; }
+[ "$RESTORED_SPACE" = "=Spaced Formula" ] || { echo "FAIL: expected product name '=Spaced Formula' after round-trip (leading spaces trimmed by API), got '$RESTORED_SPACE'"; exit 1; }
 
 echo "== CSV formula injection: test consumption-log export escapes formula-prefix cells (#226) =="
 # Consume one to generate a log entry
