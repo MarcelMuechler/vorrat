@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, contains_eager
 from app.db import get_db
 from app.models import ConsumptionLog, Product
 from app.schemas import ConsumptionLogItem, ConsumptionLogRead
+from app.utils import escape_csv_formula_injection
 
 router = APIRouter(prefix="/api/consumption-log", tags=["consumption-log"])
 
@@ -61,7 +62,13 @@ def export_consumption_log_csv(
     writer.writerow(["created_at", "product_name", "amount", "quantity_unit", "reason"])
     for item in _query_consumption_log(db, since, until, reason):
         writer.writerow(
-            [item.created_at, item.product_name, item.amount, item.quantity_unit or "", item.reason]
+            [
+                item.created_at,
+                escape_csv_formula_injection(item.product_name),
+                item.amount,
+                escape_csv_formula_injection(item.quantity_unit or ""),
+                escape_csv_formula_injection(item.reason),
+            ]
         )
     return StreamingResponse(
         iter([output.getvalue()]),

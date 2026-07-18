@@ -15,3 +15,48 @@ def normalize_barcode(code: str | None) -> str | None:
         return None
     stripped = code.strip()
     return stripped or None
+
+
+def escape_csv_formula_injection(value: str | None) -> str | None:
+    """Escape CSV cells that could be interpreted as formulas by spreadsheet applications.
+
+    Spreadsheets interpret cells starting with =, +, -, or @ (or preceding whitespace + one of these)
+    as formulas. This escapes by prefixing with a single quote, which prevents formula injection.
+    The data value itself is unchanged (spreadsheets display it without the quote).
+
+    Args:
+        value: The cell value to escape, or None
+
+    Returns:
+        The value with a leading apostrophe if it starts with a formula character, otherwise unchanged.
+    """
+    if value is None or not isinstance(value, str):
+        return value
+
+    stripped = value.lstrip()
+    if stripped and stripped[0] in ("=", "+", "-", "@"):
+        return "'" + value
+
+    return value
+
+
+def unescape_csv_formula_injection(value: str | None) -> str | None:
+    """Remove the formula injection escape prefix if present.
+
+    Reverses escape_csv_formula_injection by stripping the leading apostrophe that was
+    added to prevent spreadsheet formula interpretation.
+
+    Args:
+        value: The cell value to unescape, or None
+
+    Returns:
+        The value without the leading apostrophe if it was added as an escape, otherwise unchanged.
+    """
+    if value is None or not isinstance(value, str) or len(value) == 0:
+        return value
+
+    # Only strip the apostrophe if it's the very first character (escape was applied)
+    if value[0] == "'":
+        return value[1:]
+
+    return value
