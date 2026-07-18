@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app import __version__, off_client
 from app.routers import (
+    backup,
     barcode,
     categories,
     consumption_log,
@@ -55,6 +56,7 @@ app.include_router(settings.router)
 app.include_router(consumption_log.router)
 app.include_router(stats.router)
 app.include_router(shopping_list.router)
+app.include_router(backup.router)
 
 
 @app.get("/api/health")
