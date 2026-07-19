@@ -17,7 +17,7 @@ from app.models import (
     ShoppingListItem,
     StockEntry,
 )
-from app.off_client import lookup_off
+from app.off_client import OffLookupError, lookup_off
 from app.schemas import ProductBarcodeCreate, ProductCreate, ProductRead, ProductUpdate
 from app.utils import escape_like, normalize_barcode
 
@@ -304,7 +304,12 @@ async def refresh_product_from_off(product_id: int, db: Session = Depends(get_db
         raise HTTPException(404, "Product not found")
     if not product.barcode:
         raise HTTPException(409, "Product has no barcode to look up")
-    off_product = await lookup_off(product.barcode)
+    try:
+        off_product = await lookup_off(product.barcode)
+    except OffLookupError:
+        # Same distinction barcode.py makes: OFF being unreachable is not the
+        # same as a genuine "not found" and must not surface as one.
+        raise HTTPException(503, {"source": "none", "reason": "off_unreachable"}) from None
     if not off_product:
         raise HTTPException(404, "Not found on Open Food Facts")
     return off_product

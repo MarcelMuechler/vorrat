@@ -139,3 +139,18 @@ def test_cache_remote_image_aborts_without_buffering_past_the_size_cap(monkeypat
 
     assert result is None
     assert list(tmp_path.iterdir()) == []
+
+
+def test_refresh_product_from_off_returns_503_when_off_is_unreachable(client, monkeypatch):
+    from app.off_client import OffLookupError
+    from app.routers import products as products_router
+
+    product = client.post("/api/products", json={"name": "Milk", "barcode": "1234567890123"}).json()
+
+    async def fake_lookup_off(code):
+        raise OffLookupError("simulated network failure")
+
+    monkeypatch.setattr(products_router, "lookup_off", fake_lookup_off)
+
+    response = client.post(f"/api/products/{product['id']}/refresh-from-off")
+    assert response.status_code == 503
