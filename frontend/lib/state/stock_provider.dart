@@ -53,6 +53,15 @@ class StockProvider extends ChangeNotifier {
   StockProvider(this.api);
 
   List<StockItem> items = [];
+
+  /// Every stock item regardless of the active status/location/category/
+  /// search filter -- kept alongside the (possibly filtered) [items] purely
+  /// so [groupedItems] can compute each product's *true* total (#255):
+  /// summing [items] would silently turn "X insgesamt" into a filtered
+  /// subtotal whenever a filter narrows the list. Equal to [items] whenever
+  /// no filter is active, in which case [refresh] skips the extra fetch.
+  List<StockItem> allItems = [];
+
   bool loading = false;
   String? error;
   int? expiringWithinDaysFilter;
@@ -107,22 +116,34 @@ class StockProvider extends ChangeNotifier {
   /// nobody has started tracking cost yet.
   bool get hasAnyPricedItem => items.any((i) => i.price != null);
 
-  /// [sortedItems] collapsed to one row per product -- summed amount, the
-  /// worst status among its batches (expired beats expiring_soon beats ok),
-  /// and every distinct location it's spread across.
+  /// [sortedItems] collapsed to one row per product -- the worst status
+  /// among its batches (expired beats expiring_soon beats ok) and every
+  /// distinct location it's spread across, both still taken from the
+  /// currently visible (possibly filtered) batches, since a filter is
+  /// supposed to narrow *which* products show up at all. `totalAmount` is
+  /// the exception (#255): it's summed from [allItems] -- the unfiltered
+  /// stock -- so "X insgesamt" always reflects the product's true total
+  /// rather than quietly shrinking into a filtered subtotal whenever a
+  /// status/location/category/search filter is active. A product with no
+  /// batches left in [sortedItems] still doesn't get a row at all.
   List<ProductGroup> get groupedItems {
     final byProduct = <int, List<StockItem>>{};
     for (final item in sortedItems) {
       byProduct.putIfAbsent(item.productId, () => []).add(item);
     }
+    final trueTotalByProduct = <int, double>{};
+    for (final item in allItems) {
+      trueTotalByProduct[item.productId] = (trueTotalByProduct[item.productId] ?? 0) + item.amount;
+    }
     return byProduct.values.map((batches) {
       final worstStatus = batches
           .map((b) => b.status)
           .reduce((a, b) => (_statusSeverity[a] ?? 2) <= (_statusSeverity[b] ?? 2) ? a : b);
+      final productId = batches.first.productId;
       return ProductGroup(
-        productId: batches.first.productId,
+        productId: productId,
         productName: batches.first.productName,
-        totalAmount: batches.fold(0, (sum, b) => sum + b.amount),
+        totalAmount: trueTotalByProduct[productId] ?? 0,
         status: worstStatus,
         locationNames: {for (final b in batches) if (b.locationName != null) b.locationName!},
         lowStockThreshold: batches.first.lowStockThreshold,
@@ -193,16 +214,28 @@ class StockProvider extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      final result = await api.listStock(
+      final filtersActive =
+          expiringWithinDaysFilter != null ||
+          locationIdFilter != null ||
+          categoryIdFilter != null ||
+          searchFilter.isNotEmpty;
+      final filteredFuture = api.listStock(
         expiringWithinDays: expiringWithinDaysFilter,
         locationId: locationIdFilter,
         categoryId: categoryIdFilter,
         search: searchFilter.isEmpty ? null : searchFilter,
       );
+      // With no filter active, the filtered result already *is* the full
+      // set, so reuse that one future instead of firing a second identical
+      // request (#255) -- only fetch a separate unfiltered copy when a
+      // filter is actually narrowing things, for groupedItems' true totals.
+      final allFuture = filtersActive ? api.listStock() : filteredFuture;
+      final results = await Future.wait([filteredFuture, allFuture]);
       // A newer refresh() has since started; let its own result win instead
       // of overwriting it with this now-stale response.
       if (generation != _refreshGeneration) return;
-      items = result;
+      items = results[0];
+      allItems = results[1];
     } catch (e) {
       if (generation != _refreshGeneration) return;
       error = '$e';
