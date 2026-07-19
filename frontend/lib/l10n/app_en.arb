@@ -442,7 +442,6 @@
   "editItemTooltip": "Edit item",
   "editShoppingListItemTitle": "Edit item",
   "unitFieldLabel": "Unit",
-  "addLowStockTooltip": "Add low stock",
   "lowStockAddedCount": "{count, plural, =0{No low-stock items to add.} =1{Added 1 item.} other{Added {count} items.}}",
   "@lowStockAddedCount": {
     "placeholders": { "count": { "type": "int" } }
@@ -503,6 +502,10 @@
   "defaultsLabel": "Defaults",
   "lowStockBannerText": "{count, plural, =1{1 item low on stock} other{{count} items low on stock}}",
   "@lowStockBannerText": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "lowStockAllQueuedText": "{count, plural, =1{1 item low on stock — already on your list} other{{count} items low on stock — already on your list}}",
+  "@lowStockAllQueuedText": {
     "placeholders": { "count": { "type": "int" } }
   },
   "addAllButton": "Add all",
