@@ -131,6 +131,22 @@ def _is_external_url(url: str | None) -> bool:
     return bool(url) and url.startswith(("http://", "https://"))
 
 
+def _delete_local_upload(url: str | None) -> None:
+    """Deletes a previously-saved /uploads/... file (a stale product photo
+    being replaced or a deleted product's last reference), if any.
+
+    Resolves the path and checks it's still inside UPLOADS_DIR before
+    unlinking -- image_url is a free-text field (schemas.py places no format
+    restriction on it, since it must also accept arbitrary pasted external
+    URLs), so a value like "/uploads/../../vorrat.db" must not be able to
+    walk this out of the uploads directory and delete an unrelated file."""
+    if not url or not url.startswith("/uploads/"):
+        return
+    path = (UPLOADS_DIR / url.removeprefix("/uploads/")).resolve()
+    if path.is_relative_to(UPLOADS_DIR.resolve()):
+        path.unlink(missing_ok=True)
+
+
 @router.post("", response_model=ProductRead, status_code=201)
 def create_product(payload: ProductCreate, db: Session = Depends(get_db)):
     _validate_product_references(db, payload.category_id, payload.default_location_id)
@@ -161,6 +177,7 @@ def update_product(product_id: int, payload: ProductUpdate, db: Session = Depend
         db, updates["barcode"], exclude_product_id=product_id
     ):
         raise HTTPException(409, "A product with this barcode already exists")
+    old_image_url = product.image_url
     for key, value in updates.items():
         setattr(product, key, value)
     if "image_url" in updates and _is_external_url(product.image_url):
@@ -171,6 +188,13 @@ def update_product(product_id: int, payload: ProductUpdate, db: Session = Depend
         db.rollback()
         raise HTTPException(409, "A product with this barcode already exists")
     db.refresh(product)
+    # A previous locally-uploaded/cached photo, if any, is now unreferenced
+    # once image_url has actually changed -- same cleanup as
+    # upload_product_image's re-upload path, just missing here until now
+    # (silently orphaning a file on disk every time an image_url was pasted
+    # or refreshed over an existing local upload).
+    if "image_url" in updates and old_image_url != product.image_url:
+        _delete_local_upload(old_image_url)
     return product
 
 
@@ -209,8 +233,7 @@ async def upload_product_image(
     # way it does for API paths, so this stays correct under HA Ingress.
     product.image_url = f"/uploads/{filename}"
     db.commit()
-    if old_url and old_url.startswith("/uploads/"):
-        (UPLOADS_DIR / old_url.removeprefix("/uploads/")).unlink(missing_ok=True)
+    _delete_local_upload(old_url)
     db.refresh(product)
     return product
 
@@ -314,5 +337,4 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     db.commit()
     # Same cleanup as upload_product_image's re-upload path -- an uploaded
     # (not pasted-URL) photo has no other referrer once its product is gone.
-    if image_url and image_url.startswith("/uploads/"):
-        (UPLOADS_DIR / image_url.removeprefix("/uploads/")).unlink(missing_ok=True)
+    _delete_local_upload(image_url)

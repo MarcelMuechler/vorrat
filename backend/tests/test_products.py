@@ -57,3 +57,45 @@ def test_delete_product_blocked_by_stock(client):
 
     response = client.delete(f"/api/products/{product['id']}")
     assert response.status_code == 409
+
+
+def test_update_product_with_uploads_path_traversal_image_url_does_not_delete_outside_uploads_dir(
+    client, tmp_path
+):
+    # image_url has no format restriction (it must also accept arbitrary
+    # pasted external URLs), so a malicious/typo'd value can look like a
+    # path-traversal attempt out of UPLOADS_DIR. The canary file below sits
+    # one level above UPLOADS_DIR -- exactly where "/uploads/../canary.db"
+    # would resolve to -- and must survive both requests below.
+    from app.routers import products as products_router
+
+    canary = products_router.UPLOADS_DIR.parent / "canary.db"
+    canary.write_text("do not delete me")
+
+    product = client.post("/api/products", json={"name": "Milk"}).json()
+    # First PATCH plants the traversal path as this product's "previously
+    # uploaded" image so the second PATCH's cleanup-of-the-old-value has
+    # something to try to delete.
+    client.patch(f"/api/products/{product['id']}", json={"image_url": "/uploads/../canary.db"})
+    client.patch(f"/api/products/{product['id']}", json={"image_url": "/uploads/legit.jpg"})
+
+    assert canary.read_text() == "do not delete me"
+
+
+def test_update_product_cleans_up_previously_uploaded_image_when_replaced(client):
+    product = client.post("/api/products", json={"name": "Milk"}).json()
+    upload = client.post(
+        f"/api/products/{product['id']}/image",
+        files={"file": ("photo.png", b"\x89PNG\r\n\x1a\n" + b"0" * 16, "image/png")},
+    )
+    old_url = upload.json()["image_url"]
+    assert old_url.startswith("/uploads/")
+
+    from app.routers import products as products_router
+
+    old_path = products_router.UPLOADS_DIR / old_url.removeprefix("/uploads/")
+    assert old_path.exists()
+
+    client.patch(f"/api/products/{product['id']}", json={"image_url": "https://example.invalid/no-such-host.jpg"})
+
+    assert not old_path.exists()
