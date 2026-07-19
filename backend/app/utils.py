@@ -24,17 +24,24 @@ def escape_csv_formula_injection(value: str | None) -> str | None:
     as formulas. This escapes by prefixing with a single quote, which prevents formula injection.
     The data value itself is unchanged (spreadsheets display it without the quote).
 
+    A value that already starts with a literal apostrophe is escaped too (by adding a second
+    one) -- not because a leading apostrophe is itself dangerous, but so
+    unescape_csv_formula_injection, which always strips exactly one leading apostrophe, can
+    losslessly round-trip a real name like "'Nduja" through export -> import instead of
+    corrupting it into "Nduja".
+
     Args:
         value: The cell value to escape, or None
 
     Returns:
-        The value with a leading apostrophe if it starts with a formula character, otherwise unchanged.
+        The value with a leading apostrophe if it starts with a formula character (or an
+        apostrophe), otherwise unchanged.
     """
     if value is None or not isinstance(value, str):
         return value
 
     stripped = value.lstrip()
-    if stripped and stripped[0] in ("=", "+", "-", "@"):
+    if stripped and stripped[0] in ("=", "+", "-", "@", "'"):
         return "'" + value
 
     return value
