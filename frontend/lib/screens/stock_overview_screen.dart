@@ -547,6 +547,13 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
       case StockViewMode.grouped:
         final groups = stock.groupedItems;
         return ListView.separated(
+          // Bottom clearance for the FAB (#253) -- without it, the last row
+          // sits directly under the FAB whenever the list is short enough
+          // not to need scrolling (or once scrolled to the end), clipping
+          // its text/chevron under the button. 88 = 56dp FAB diameter + 16dp
+          // default margin, plus a little breathing room, matching Material
+          // FAB size/margin conventions.
+          padding: const EdgeInsets.only(bottom: 88),
           itemCount: groups.length,
           separatorBuilder: (_, _) => const Divider(height: 1),
           itemBuilder: (context, index) => _buildGroupTile(context, groups[index]),
