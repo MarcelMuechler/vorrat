@@ -117,6 +117,7 @@
   "newLocationTitle": "Neuer Standort",
   "couldNotAddLocation": "Standort konnte nicht hinzugefügt werden: {error}",
   "couldNotSave": "Speichern fehlgeschlagen: {error}",
+  "invalidInputGeneric": "Bitte überprüfe deine Eingabe und versuche es erneut.",
   "duplicateProductTitle": "Ähnliches Produkt vorhanden",
   "duplicateProductMessage": "Ein Produkt namens \"{name}\" existiert bereits — stattdessen verwenden?",
   "duplicateProductCreateNew": "Neu anlegen",

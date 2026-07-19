@@ -217,9 +217,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.couldNotSave('$e'))));
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotSave(apiFailureReason(e, l10n)))));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

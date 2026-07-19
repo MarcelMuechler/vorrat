@@ -758,6 +758,12 @@ abstract class AppLocalizations {
   /// **'Could not save: {error}'**
   String couldNotSave(String error);
 
+  /// No description provided for @invalidInputGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Please check your input and try again.'**
+  String get invalidInputGeneric;
+
   /// No description provided for @duplicateProductTitle.
   ///
   /// In en, this message translates to:

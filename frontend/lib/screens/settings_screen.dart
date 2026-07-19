@@ -88,7 +88,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(l10n.couldNotSave('$e'))));
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotSave(apiFailureReason(e, l10n)))));
       }
     } finally {
       if (mounted) setState(() => _savingExpiringSoon = false);

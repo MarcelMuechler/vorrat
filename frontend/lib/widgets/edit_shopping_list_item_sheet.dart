@@ -84,7 +84,9 @@ class _EditShoppingListItemSheetState extends State<EditShoppingListItemSheet> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.couldNotSave('$e'))));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotSave(apiFailureReason(e, l10n)))));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

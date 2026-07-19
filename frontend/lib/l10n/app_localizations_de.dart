@@ -396,6 +396,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get invalidInputGeneric =>
+      'Bitte überprüfe deine Eingabe und versuche es erneut.';
+
+  @override
   String get duplicateProductTitle => 'Ähnliches Produkt vorhanden';
 
   @override
