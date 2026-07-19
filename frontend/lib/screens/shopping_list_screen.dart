@@ -225,16 +225,23 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     // Reads StockProvider's already-loaded data (no fetch of its own) --
     // only populated once the Stock tab has been visited at least once,
     // same as its "Low stock" stat card (#199 wireframe revamp).
-    final lowStockCount = context.watch<StockProvider>().groupedItems.where((g) => g.isLowStock).length;
+    final lowStockGroups = context.watch<StockProvider>().groupedItems.where((g) => g.isLowStock).toList();
+    // Product ids already queued: an open (not-done) item linked to that
+    // product. Mirrors the backend's own "already listed" check in
+    // add_low_stock_items (routers/shopping_list.py) so the banner's notion
+    // of "already on the list" can't drift from what tapping the button
+    // actually does (#254).
+    final openListedProductIds = _items
+        .where((i) => !i.done && i.productId != null)
+        .map((i) => i.productId)
+        .toSet();
+    final lowStockCount = lowStockGroups.length;
+    final lowStockPendingCount =
+        lowStockGroups.where((g) => !openListedProductIds.contains(g.productId)).length;
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.shoppingListTitle),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add_shopping_cart),
-            tooltip: l10n.addLowStockTooltip,
-            onPressed: _addLowStock,
-          ),
           IconButton(
             icon: const Icon(Icons.delete_sweep),
             tooltip: l10n.clearDoneTooltip,
@@ -244,7 +251,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       ),
       body: Column(
         children: [
-          if (lowStockCount > 0) _buildLowStockBanner(context, l10n, lowStockCount),
+          if (lowStockCount > 0) _buildLowStockBanner(context, l10n, lowStockCount, lowStockPendingCount),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: _buildAddField(l10n),
@@ -257,8 +264,14 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     );
   }
 
-  Widget _buildLowStockBanner(BuildContext context, AppLocalizations l10n, int count) {
+  // `pending` is `count` minus whatever's already queued as an open item on
+  // the shopping list (#254) -- once it hits 0, every currently-low-stock
+  // product already has an open item, so the button is disabled and the
+  // label says so instead of staying indistinguishable from "nothing done
+  // yet" after a tap.
+  Widget _buildLowStockBanner(BuildContext context, AppLocalizations l10n, int count, int pending) {
     final colors = Theme.of(context).colorScheme;
+    final allQueued = pending == 0;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
       child: Container(
@@ -269,8 +282,13 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         ),
         child: Row(
           children: [
-            Expanded(child: Text(l10n.lowStockBannerText(count))),
-            FilledButton.tonal(onPressed: _addLowStock, child: Text(l10n.addAllButton)),
+            Expanded(
+              child: Text(allQueued ? l10n.lowStockAllQueuedText(count) : l10n.lowStockBannerText(count)),
+            ),
+            FilledButton.tonal(
+              onPressed: allQueued ? null : _addLowStock,
+              child: Text(l10n.addAllButton),
+            ),
           ],
         ),
       ),
