@@ -118,9 +118,10 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.couldNotSave('$e'))));
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotSave(apiFailureReason(e, l10n)))));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -209,9 +210,10 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
       await _showQrLabelDialog();
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.couldNotSave('$e'))));
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotSave(apiFailureReason(e, l10n)))));
       }
     } finally {
       if (mounted) setState(() => _generatingQrLabel = false);
@@ -266,9 +268,10 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
       });
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.couldNotSave('$e'))));
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotSave(apiFailureReason(e, l10n)))));
       }
     } finally {
       if (mounted) setState(() => _barcodeBusy = false);
@@ -284,9 +287,10 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
       setState(() => _extraBarcodes = updated.extraBarcodes);
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.couldNotSave('$e'))));
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotSave(apiFailureReason(e, l10n)))));
       }
     } finally {
       if (mounted) setState(() => _barcodeBusy = false);

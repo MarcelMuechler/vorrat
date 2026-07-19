@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../state/settings_provider.dart';
 
@@ -23,6 +24,59 @@ class ApiException implements Exception {
 
   @override
   String toString() => 'Request failed ($statusCode): $body';
+
+  /// A short, user-facing reason for this failure -- for callers to show
+  /// instead of [toString]'s raw `$statusCode: $body` (#250).
+  ///
+  /// FastAPI/Pydantic 422 responses shape [body] as
+  /// `{"detail": [{"type": ..., "msg": ..., ...}, ...]}` -- a machine-shaped,
+  /// English, validation error that leaks internal schema details if dumped
+  /// verbatim into a translated UI (e.g. a German user seeing `String should
+  /// have at least 1 character`). This maps the handful of validation `type`
+  /// codes this app's own forms can actually trigger -- a required text
+  /// field left empty (`string_too_short`, e.g. an empty product/location
+  /// name), or a number that must be positive (`greater_than`/
+  /// `greater_than_equal`, e.g. amount/price/thresholds) -- to an
+  /// already-translated string reused from elsewhere in the app, rather than
+  /// adding a new one per case.
+  ///
+  /// A plain `{"detail": "..."}` string (this backend's own hand-written
+  /// conflict/business-rule messages, e.g. "A product with this barcode
+  /// already exists") is shown as-is: it's already short and human-readable,
+  /// not a schema dump, so there's nothing to translate it into.
+  ///
+  /// Anything else -- a non-JSON body, or a validation `type` this app's
+  /// forms don't expect to hit -- falls back to one generic localized
+  /// message instead of the raw body.
+  String reason(AppLocalizations l10n) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        final detail = decoded['detail'];
+        if (detail is List && detail.isNotEmpty && detail.first is Map) {
+          switch ((detail.first as Map)['type']) {
+            case 'string_too_short':
+              return l10n.nameRequired;
+            case 'greater_than':
+            case 'greater_than_equal':
+              return l10n.amountInvalid;
+          }
+        } else if (detail is String && detail.isNotEmpty) {
+          return detail;
+        }
+      }
+    } catch (_) {
+      // Not JSON, or not the shape we expect -- fall through to generic.
+    }
+    return l10n.invalidInputGeneric;
+  }
+}
+
+/// `error is ApiException ? error.reason(l10n) : '$error'` -- the one
+/// non-[ApiException] case call sites still fall back to (a
+/// [TimeoutException] etc., which has no friendlier form to offer).
+String apiFailureReason(Object error, AppLocalizations l10n) {
+  return error is ApiException ? error.reason(l10n) : '$error';
 }
 
 void _checkOk(http.Response res) {

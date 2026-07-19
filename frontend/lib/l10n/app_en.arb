@@ -195,6 +195,7 @@
   "@couldNotSave": {
     "placeholders": { "error": { "type": "String" } }
   },
+  "invalidInputGeneric": "Please check your input and try again.",
   "duplicateProductTitle": "Similar product exists",
   "duplicateProductMessage": "A product named \"{name}\" already exists — use it instead?",
   "@duplicateProductMessage": {

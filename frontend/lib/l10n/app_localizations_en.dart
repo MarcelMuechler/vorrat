@@ -395,6 +395,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get invalidInputGeneric => 'Please check your input and try again.';
+
+  @override
   String get duplicateProductTitle => 'Similar product exists';
 
   @override
