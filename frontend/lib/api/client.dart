@@ -35,10 +35,10 @@ class ApiException implements Exception {
   /// have at least 1 character`). This maps the handful of validation `type`
   /// codes this app's own forms can actually trigger -- a required text
   /// field left empty (`string_too_short`, e.g. an empty product/location
-  /// name), or a number that must be positive (`greater_than`/
-  /// `greater_than_equal`, e.g. amount/price/thresholds) -- to an
-  /// already-translated string reused from elsewhere in the app, rather than
-  /// adding a new one per case.
+  /// name), or a number that must be positive and finite (`greater_than`/
+  /// `greater_than_equal`/`finite_number`, e.g. amount/price/thresholds) --
+  /// to an already-translated string reused from elsewhere in the app,
+  /// rather than adding a new one per case.
   ///
   /// A plain `{"detail": "..."}` string (this backend's own hand-written
   /// conflict/business-rule messages, e.g. "A product with this barcode
@@ -59,6 +59,7 @@ class ApiException implements Exception {
               return l10n.nameRequired;
             case 'greater_than':
             case 'greater_than_equal':
+            case 'finite_number':
               return l10n.amountInvalid;
           }
         } else if (detail is String && detail.isNotEmpty) {
