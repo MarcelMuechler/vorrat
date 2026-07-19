@@ -198,6 +198,13 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
                     ],
                   )
                 : ListView(
+                    // Bottom clearance for the FAB (#253) -- without it, the
+                    // last batch row sits directly under the FAB whenever
+                    // the list is short enough not to need scrolling (or
+                    // once scrolled to the end). Same 88 = 56dp FAB diameter
+                    // + 16dp default margin (plus breathing room) used by
+                    // the grouped stock view for the same reason.
+                    padding: const EdgeInsets.only(bottom: 88),
                     children: [
                       _buildHeader(context),
                       if (_soonestBatch != null) _buildExpiryBanner(context, _soonestBatch!),
