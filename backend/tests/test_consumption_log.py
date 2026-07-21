@@ -1,4 +1,6 @@
-from datetime import date, timedelta
+import os
+import time
+from datetime import date, datetime, timedelta
 
 
 def _consume(client, amount=1, reason="used"):
@@ -59,6 +61,29 @@ def test_consumption_log_filters_by_since_and_until(client):
         },
     )
     assert len(response.json()) == 1
+
+
+def test_local_midnight_utc_converts_local_calendar_day_to_utc(monkeypatch):
+    # Regression test for the since/until filters comparing a local calendar
+    # date directly against created_at (naive UTC, from SQLite's
+    # CURRENT_TIMESTAMP) -- wrong for part of the day whenever the local and
+    # UTC calendar dates differ. Forces a specific TZ rather than relying on
+    # whatever offset happens to be in effect when the suite runs, so this
+    # doesn't depend on wall-clock time like the bug it guards against.
+    from app.routers.consumption_log import _local_midnight_utc
+
+    original_tz = os.environ.get("TZ")
+    os.environ["TZ"] = "Europe/Berlin"
+    time.tzset()
+    try:
+        # July -> CEST (UTC+2): local midnight July 22 is 22:00 UTC July 21.
+        assert _local_midnight_utc(date(2026, 7, 22)) == datetime(2026, 7, 21, 22, 0, 0)
+    finally:
+        if original_tz is None:
+            os.environ.pop("TZ", None)
+        else:
+            os.environ["TZ"] = original_tz
+        time.tzset()
 
 
 def test_export_consumption_log_csv(client):
