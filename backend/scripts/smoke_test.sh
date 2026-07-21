@@ -130,26 +130,24 @@ STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/products/9999
 rm -f "$IMAGE_FILE"
 trap - EXIT
 
-echo "== products: create with an external image_url caches it locally instead of hotlinking (#262) =="
-# No real network dependency: point at our own already-uploaded image (served
-# absolute via $BASE) as a stand-in "external" host -- exercises the exact
-# same download+cache code path a real Open Food Facts image_url would. Must
-# be SECOND_UPLOADED_IMAGE_URL, not the first -- that one was already deleted
-# by the re-upload test above.
-EXTERNAL_IMAGE_URL="$BASE$SECOND_UPLOADED_IMAGE_URL"
-CACHED_PRODUCT=$(curl -sf -X POST "$BASE/api/products" \
+echo "== products: create with a loopback image_url is rejected by the SSRF guard, not hotlinked (#288) =="
+# Used to point at our own already-uploaded image (served absolute via $BASE)
+# as a hermetic stand-in "external" host. Since #288, _cache_remote_image
+# refuses to fetch loopback/private/link-local targets -- and $BASE is
+# loopback in this script's environment -- so that stand-in now correctly
+# gets dropped instead of cached. The successful "downloads and caches a
+# public host" path is exercised with mocked DNS resolution in
+# tests/test_products.py::test_cache_remote_image_still_caches_a_normal_public_image
+# instead, since genuinely reaching a public host isn't available hermetically here.
+LOOPBACK_IMAGE_URL="$BASE$SECOND_UPLOADED_IMAGE_URL"
+REJECTED_PRODUCT=$(curl -sf -X POST "$BASE/api/products" \
   -H 'content-type: application/json' \
-  -d '{"name": "Cheese", "image_url": "'"$EXTERNAL_IMAGE_URL"'"}')
-CACHED_IMAGE_URL=$(echo "$CACHED_PRODUCT" | jq -r .image_url)
-case "$CACHED_IMAGE_URL" in
-  /uploads/*) : ;;
-  *) echo "FAIL: expected external image_url to be cached under /uploads/, got $CACHED_IMAGE_URL"; exit 1 ;;
-esac
-STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$BASE$CACHED_IMAGE_URL")
-[ "$STATUS" = "200" ] || { echo "FAIL: expected 200 fetching the cached image, got $STATUS"; exit 1; }
+  -d '{"name": "Cheese", "image_url": "'"$LOOPBACK_IMAGE_URL"'"}')
+REJECTED_IMAGE_URL=$(echo "$REJECTED_PRODUCT" | jq -r .image_url)
+[ "$REJECTED_IMAGE_URL" = "null" ] || { echo "FAIL: expected loopback image_url to be rejected (null), got $REJECTED_IMAGE_URL"; exit 1; }
 # Cleanup: keep the product count downstream (stats/HA sensors) assertions
 # below unaffected by these scratch products.
-curl -sf -X DELETE "$BASE/api/products/$(echo "$CACHED_PRODUCT" | jq -r .id)" -o /dev/null
+curl -sf -X DELETE "$BASE/api/products/$(echo "$REJECTED_PRODUCT" | jq -r .id)" -o /dev/null
 
 echo "== products: create with an unreachable image_url drops it rather than failing the save (expect 201, image_url null) =="
 BROKEN_PRODUCT=$(curl -sf -X POST "$BASE/api/products" \
@@ -159,14 +157,11 @@ DROPPED_IMAGE_URL=$(echo "$BROKEN_PRODUCT" | jq -r .image_url)
 [ "$DROPPED_IMAGE_URL" = "null" ] || { echo "FAIL: expected image_url to be dropped (null), got $DROPPED_IMAGE_URL"; exit 1; }
 curl -sf -X DELETE "$BASE/api/products/$(echo "$BROKEN_PRODUCT" | jq -r .id)" -o /dev/null
 
-echo "== products: patch with an external image_url also caches it locally (#262) =="
+echo "== products: patch with a loopback image_url is also rejected by the SSRF guard (#288) =="
 PATCHED_IMAGE_URL=$(curl -sf -X PATCH "$BASE/api/products/$PRODUCT_ID" \
   -H 'content-type: application/json' \
-  -d '{"image_url": "'"$EXTERNAL_IMAGE_URL"'"}' | jq -r .image_url)
-case "$PATCHED_IMAGE_URL" in
-  /uploads/*) : ;;
-  *) echo "FAIL: expected patched external image_url to be cached under /uploads/, got $PATCHED_IMAGE_URL"; exit 1 ;;
-esac
+  -d '{"image_url": "'"$LOOPBACK_IMAGE_URL"'"}' | jq -r .image_url)
+[ "$PATCHED_IMAGE_URL" = "null" ] || { echo "FAIL: expected patched loopback image_url to be rejected (null), got $PATCHED_IMAGE_URL"; exit 1; }
 
 echo "== products: create with nonexistent category_id (expect 404 not 500) =="
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/products" \
