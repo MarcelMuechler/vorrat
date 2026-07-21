@@ -17,6 +17,12 @@ router = APIRouter(prefix="/api/backup", tags=["backup"])
 # unbounded upload (mirrors stock.py's IMPORT_CSV_MAX_BYTES pattern).
 _MAX_RESTORE_BYTES = 500 * 1024 * 1024
 _SQLITE_HEADER = b"SQLite format 3\x00"
+# Tables that must exist for an uploaded file to plausibly be a Vorrat
+# backup rather than just any well-formed SQLite file -- an empty or
+# foreign database (e.g. a fresh `sqlite3 x.db "VACUUM"`) passes the magic
+# header and PRAGMA schema_version checks below but has neither of these,
+# and would otherwise silently wipe the live DB via os.replace.
+_REQUIRED_TABLES = ("products", "stock_entries")
 
 
 def _db_path() -> str:
@@ -90,10 +96,29 @@ def restore_backup(file: UploadFile = File(...)):
             check = sqlite3.connect(tmp_path)
             try:
                 check.execute("PRAGMA schema_version")
+                existing_tables = {
+                    row[0]
+                    for row in check.execute(
+                        "SELECT name FROM sqlite_master WHERE type = 'table'"
+                    )
+                }
             finally:
                 check.close()
         except sqlite3.DatabaseError:
             raise HTTPException(status_code=400, detail="Uploaded file is not a valid SQLite database")
+
+        missing_tables = [t for t in _REQUIRED_TABLES if t not in existing_tables]
+        if missing_tables:
+            # Distinct from the generic "not a valid SQLite database" error
+            # above: this file *is* a well-formed SQLite database, it's just
+            # not a Vorrat one (e.g. empty, or from an unrelated app).
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Uploaded file is a valid SQLite database but not a Vorrat backup "
+                    f"(missing expected table(s): {', '.join(missing_tables)})"
+                ),
+            )
 
         # Drop the pool's open connections to the old file first -- otherwise
         # the swap below can leave a writer holding a handle to the replaced
