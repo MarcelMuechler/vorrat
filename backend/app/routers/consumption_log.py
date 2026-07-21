@@ -1,6 +1,6 @@
 import csv
 import io
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
@@ -12,6 +12,19 @@ from app.schemas import ConsumptionLogItem, ConsumptionLogRead
 from app.utils import escape_csv_formula_injection
 
 router = APIRouter(prefix="/api/consumption-log", tags=["consumption-log"])
+
+
+def _local_midnight_utc(d: date) -> datetime:
+    """Converts a local calendar-day boundary to the naive UTC datetime
+    ConsumptionLog.created_at can be compared against -- created_at is
+    written via SQLite's CURRENT_TIMESTAMP (naive UTC), but since/until are
+    local calendar dates (what a date picker or `date.today()` produces).
+    Comparing them directly was wrong for part of the day whenever the local
+    and UTC calendar dates differ (e.g. shortly after local midnight in any
+    UTC+ timezone), silently including/excluding entries by up to a day.
+    `.astimezone()` with no args reinterprets a naive datetime as the
+    system's local time, so this also accounts for DST on that date."""
+    return datetime.combine(d, time.min).astimezone(timezone.utc).replace(tzinfo=None)
 
 
 def _query_consumption_log(
@@ -26,9 +39,11 @@ def _query_consumption_log(
         .options(contains_eager(ConsumptionLog.product))
     )
     if since is not None:
-        query = query.filter(ConsumptionLog.created_at >= since)
+        query = query.filter(ConsumptionLog.created_at >= _local_midnight_utc(since))
     if until is not None:
-        query = query.filter(ConsumptionLog.created_at < until + timedelta(days=1))
+        query = query.filter(
+            ConsumptionLog.created_at < _local_midnight_utc(until + timedelta(days=1))
+        )
     if reason is not None:
         query = query.filter(ConsumptionLog.reason == reason)
     return [
