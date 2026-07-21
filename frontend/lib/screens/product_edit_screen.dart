@@ -28,6 +28,8 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   late final TextEditingController _openShelfLifeDaysController;
   late final TextEditingController _lowStockThresholdController;
   late final TextEditingController _targetStockLevelController;
+  late final TextEditingController _expiringSoonDaysController;
+  late bool _doesNotSpoil;
   List<Location> _locations = [];
   int? _selectedLocationId;
   String? _imageUrl;
@@ -67,6 +69,10 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     _targetStockLevelController = TextEditingController(
       text: p.targetStockLevel == null ? '' : '${p.targetStockLevel}',
     );
+    _expiringSoonDaysController = TextEditingController(
+      text: p.expiringSoonDays == null ? '' : '${p.expiringSoonDays}',
+    );
+    _doesNotSpoil = p.doesNotSpoil;
     _selectedLocationId = p.defaultLocationId;
     _imageUrl = p.imageUrl;
     _extraBarcodes = List<String>.from(p.extraBarcodes);
@@ -81,6 +87,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     _openShelfLifeDaysController.dispose();
     _lowStockThresholdController.dispose();
     _targetStockLevelController.dispose();
+    _expiringSoonDaysController.dispose();
     _newBarcodeController.dispose();
     super.dispose();
   }
@@ -108,10 +115,12 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
         'category_id': _categoryId,
         'quantity_unit': _quantityUnit.isEmpty ? 'pcs' : _quantityUnit,
         'default_location_id': _selectedLocationId,
-        'default_best_before_days': int.tryParse(_bestBeforeDaysController.text),
+        'default_best_before_days': _doesNotSpoil ? null : int.tryParse(_bestBeforeDaysController.text),
         'default_open_shelf_life_days': int.tryParse(_openShelfLifeDaysController.text),
         'low_stock_threshold': double.tryParse(_lowStockThresholdController.text),
         'target_stock_level': double.tryParse(_targetStockLevelController.text),
+        'does_not_spoil': _doesNotSpoil,
+        'expiring_soon_days': int.tryParse(_expiringSoonDaysController.text),
         'image_url': _imageUrl,
       });
       if (!mounted) return;
@@ -437,8 +446,26 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   onChanged: (value) => setState(() => _selectedLocationId = value),
                 ),
                 const SizedBox(height: 12),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.doesNotSpoilLabel),
+                  subtitle: Text(l10n.doesNotSpoilHint),
+                  value: _doesNotSpoil,
+                  onChanged: (value) => setState(() => _doesNotSpoil = value),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _expiringSoonDaysController,
+                  decoration: InputDecoration(
+                    labelText: l10n.expiringSoonDaysOverrideLabel,
+                    hintText: l10n.expiringSoonDaysOverrideHint,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 12),
                 TextField(
                   controller: _bestBeforeDaysController,
+                  enabled: !_doesNotSpoil,
                   decoration: InputDecoration(
                     labelText: l10n.defaultBestBeforeDaysLabel,
                     hintText: l10n.defaultBestBeforeDaysHint,

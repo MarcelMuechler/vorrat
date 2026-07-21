@@ -241,6 +241,11 @@
   "lowStockChip": "Low stock",
   "targetStockLevelLabel": "Target stock level",
   "targetStockLevelHint": "e.g. 5 — add-low-stock restocks up to this amount instead of just 1",
+  "doesNotSpoilLabel": "Does not spoil",
+  "doesNotSpoilHint": "Shelf-stable goods (rice, canned food, spices) — always shown as ok, no best-before date needed",
+  "expiringSoonDaysOverrideLabel": "Expiring-soon window (days)",
+  "expiringSoonDaysOverrideHint": "Overrides the household default just for this product — leave blank to use it",
+  "doesNotSpoilStockHint": "This product does not spoil — no best-before date needed",
 
   "extraBarcodesLabel": "Alternate barcodes",
   "extraBarcodesHint": "Other codes (e.g. a different pack size) that should also scan to this product",
