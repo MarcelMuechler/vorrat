@@ -8,10 +8,11 @@ import 'package:vorrat/screens/stock_overview_screen.dart';
 import 'package:vorrat/state/settings_provider.dart';
 import 'package:vorrat/state/stock_provider.dart';
 
-// #222: the Stock filter row (expiring-soon chip + location pill + category
-// pill) used to be a Wrap that dropped a pill to a second line on a narrow
-// phone, making the row's height jump around. It's now a single Row whose
-// pills flex and ellipsize, so every filter stays on one line at any width.
+// #222: the Stock filter row (location pill + category pill, an
+// expiring-soon chip until #295 removed it in favor of the stat tile above)
+// used to be a Wrap that dropped a pill to a second line on a narrow phone,
+// making the row's height jump around. It's now a single Row whose pills
+// flex and ellipsize, so every filter stays on one line at any width.
 class FakeApiClient extends ApiClient {
   FakeApiClient(super.settings);
 
@@ -70,10 +71,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Both pills and the chip render; a leftover overflow would have thrown
-    // during pump, so reaching here means the row fit on a single line.
+    // Both pills render; a leftover overflow would have thrown during pump,
+    // so reaching here means the row fit on a single line.
     expect(tester.takeException(), isNull);
-    expect(find.widgetWithText(FilterChip, 'Bald ablaufend'), findsOneWidget);
     expect(find.text('Alle Standorte'), findsOneWidget);
     expect(find.text('Alle Kategorien'), findsOneWidget);
   });

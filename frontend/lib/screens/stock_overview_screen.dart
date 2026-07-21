@@ -182,16 +182,14 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
                   // height jump around. The dropdown pills flex and ellipsize
                   // their labels (see _pillDropdown) so all filters stay on
                   // one line at any width or locale instead of wrapping.
+                  // No leading FilterChip here anymore (#295) -- "Expiring
+                  // soon" is now covered by the stat tile above, so these two
+                  // pills are free to split the full row width between them
+                  // instead of being squeezed by a third fixed-width sibling,
+                  // which used to truncate their labels on phone widths.
                   child: Row(
                     children: [
-                      FilterChip(
-                        label: Text(l10n.expiringSoonChip),
-                        selected: stock.expiringWithinDaysFilter != null,
-                        onSelected: (selected) =>
-                            stock.setExpiringFilter(selected ? stock.expiringSoonDays : null),
-                      ),
-                      if (_locations.isNotEmpty) ...[
-                        const SizedBox(width: 12),
+                      if (_locations.isNotEmpty)
                         Flexible(
                           child: _pillDropdown(
                             value: stock.locationIdFilter,
@@ -203,9 +201,8 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
                             onChanged: (value) => stock.setLocationFilter(value),
                           ),
                         ),
-                      ],
                       if (_categories.isNotEmpty) ...[
-                        const SizedBox(width: 12),
+                        if (_locations.isNotEmpty) const SizedBox(width: 12),
                         Flexible(
                           child: _pillDropdown(
                             value: stock.categoryIdFilter,
@@ -323,16 +320,17 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
 
   // Glanceable urgency counts above the filter row (#199 wireframe revamp) --
   // computed client-side from data already loaded (StockProvider.items /
-  // groupedItems), no new provider state needed. Expired/Expiring both reuse
-  // the existing "expiring soon" filter toggle (there's no separate
-  // "expired-only" filter); Low stock switches to the grouped view, where
-  // ProductGroup.isLowStock is actually surfaced per row -- an approximation
-  // since there's no dedicated low-stock-only filter either.
+  // groupedItems), no new provider state needed for the counts themselves.
+  // Expired/Expiring each set their own StockProvider.statusFilter value
+  // (#295, distinct from one another -- tapping either narrows the list
+  // below to just that status, tapping the active one again clears it). Low
+  // stock switches to the grouped view, where ProductGroup.isLowStock is
+  // actually surfaced per row -- an approximation since there's no dedicated
+  // low-stock-only filter either.
   Widget _buildStatStrip(BuildContext context, StockProvider stock, AppLocalizations l10n) {
     final expiredCount = stock.items.where((i) => i.status == 'expired').length;
     final expiringCount = stock.items.where((i) => i.status == 'expiring_soon').length;
     final lowStockCount = stock.groupedItems.where((g) => g.isLowStock).length;
-    final filterActive = stock.expiringWithinDaysFilter != null;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
       child: Row(
@@ -343,8 +341,8 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
               count: expiredCount,
               label: l10n.statusExpired,
               color: statusColor('expired'),
-              selected: filterActive,
-              onTap: () => stock.setExpiringFilter(filterActive ? null : stock.expiringSoonDays),
+              selected: stock.statusFilter == 'expired',
+              onTap: () => stock.setStatusFilter('expired'),
             ),
           ),
           const SizedBox(width: 8),
@@ -354,8 +352,8 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
               count: expiringCount,
               label: l10n.statusExpiringSoon,
               color: statusColor('expiring_soon'),
-              selected: filterActive,
-              onTap: () => stock.setExpiringFilter(filterActive ? null : stock.expiringSoonDays),
+              selected: stock.statusFilter == 'expiring_soon',
+              onTap: () => stock.setStatusFilter('expiring_soon'),
             ),
           ),
           const SizedBox(width: 8),

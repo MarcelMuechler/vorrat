@@ -68,6 +68,13 @@ class StockProvider extends ChangeNotifier {
   int? locationIdFilter;
   int? categoryIdFilter;
   String searchFilter = '';
+
+  /// 'expired' / 'expiring_soon' / null (no filter) -- narrows [sortedItems]
+  /// by [StockItem.status] (#295). Independent of [expiringWithinDaysFilter]:
+  /// purely a client-side narrowing of the already-loaded [items], since
+  /// status is already computed per item, unlike the other filters above
+  /// which are server-side query params requiring a [refresh].
+  String? statusFilter;
   StockSort sort = StockSort.bestBeforeDate;
   StockViewMode viewMode = StockViewMode.flat;
   int expiringSoonDays = 3;
@@ -80,10 +87,13 @@ class StockProvider extends ChangeNotifier {
   // its outcome if it's still the most recent one in flight.
   int _refreshGeneration = 0;
 
-  /// [items] sorted client-side -- the list is already fully fetched, and
-  /// re-querying the API just to change ordering would be wasteful.
+  /// [items] narrowed by [statusFilter] (if set) and sorted client-side --
+  /// the list is already fully fetched, and re-querying the API just to
+  /// change ordering (or apply a filter [StockItem.status] already answers)
+  /// would be wasteful.
   List<StockItem> get sortedItems {
-    final sorted = [...items];
+    final filtered = statusFilter == null ? items : items.where((i) => i.status == statusFilter).toList();
+    final sorted = [...filtered];
     switch (sort) {
       case StockSort.bestBeforeDate:
         break; // already the API's default order (by effective expiry, #225)
@@ -194,6 +204,13 @@ class StockProvider extends ChangeNotifier {
 
   void setViewMode(StockViewMode mode) {
     viewMode = mode;
+    notifyListeners();
+  }
+
+  /// Sets [statusFilter], toggling it off if [value] is already active (#295)
+  /// -- matches the stat tiles' existing tap-to-toggle behavior.
+  void setStatusFilter(String value) {
+    statusFilter = statusFilter == value ? null : value;
     notifyListeners();
   }
 
