@@ -732,7 +732,7 @@ wheels = [
 
 [[package]]
 name = "vorrat-backend"
-version = "0.21.2"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },
