@@ -16,6 +16,22 @@ def _make_sqlite_file(path, marker):
         conn.close()
 
 
+def _make_vorrat_sqlite_file(path, marker):
+    # Like _make_sqlite_file, but also includes the tables restore_backup
+    # requires as evidence the upload is actually a Vorrat backup, not just
+    # any well-formed SQLite file -- the schema/columns don't matter for
+    # that check, only that the tables exist.
+    conn = sqlite3.connect(path)
+    try:
+        conn.execute("CREATE TABLE marker (value TEXT)")
+        conn.execute("INSERT INTO marker (value) VALUES (?)", (marker,))
+        conn.execute("CREATE TABLE products (id INTEGER PRIMARY KEY)")
+        conn.execute("CREATE TABLE stock_entries (id INTEGER PRIMARY KEY)")
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def _read_marker(path):
     conn = sqlite3.connect(path)
     try:
@@ -57,7 +73,7 @@ def test_restore_backup_replaces_the_live_db_file(client, tmp_path, monkeypatch)
     monkeypatch.setattr(backup_router, "engine", create_engine(f"sqlite:///{target_path}"))
 
     upload_path = tmp_path / "upload.db"
-    _make_sqlite_file(upload_path, "new")
+    _make_vorrat_sqlite_file(upload_path, "new")
 
     with open(upload_path, "rb") as f:
         response = client.post(
@@ -99,4 +115,34 @@ def test_restore_backup_rejects_an_empty_upload(client, tmp_path, monkeypatch):
     )
 
     assert response.status_code == 400
+    assert _read_marker(target_path) == "old"
+
+
+def test_restore_backup_rejects_a_valid_but_foreign_sqlite_file(client, tmp_path, monkeypatch):
+    # A well-formed SQLite file (passes the magic-header and
+    # PRAGMA schema_version checks) that simply isn't a Vorrat backup --
+    # e.g. an empty `sqlite3 empty.db "VACUUM"` or an unrelated app's
+    # database -- must still be rejected rather than silently wiping the
+    # live DB with data that has none of the expected tables.
+    target_path = tmp_path / "target4.db"
+    _make_sqlite_file(target_path, "old")
+    monkeypatch.setattr(env_settings, "database_url", f"sqlite:///{target_path}")
+
+    foreign_path = tmp_path / "foreign.db"
+    conn = sqlite3.connect(foreign_path)
+    try:
+        conn.execute("CREATE TABLE unrelated_app_table (id INTEGER PRIMARY KEY)")
+        conn.commit()
+    finally:
+        conn.close()
+
+    with open(foreign_path, "rb") as f:
+        response = client.post(
+            "/api/backup/restore",
+            files={"file": ("foreign.db", f, "application/x-sqlite3")},
+        )
+
+    assert response.status_code == 400
+    assert "not a Vorrat backup" in response.json()["detail"]
+    # The rejected upload must not have touched the existing live DB file.
     assert _read_marker(target_path) == "old"
