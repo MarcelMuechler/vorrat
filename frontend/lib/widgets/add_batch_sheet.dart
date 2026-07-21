@@ -51,7 +51,7 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
     _priceController = TextEditingController();
     _selectedLocationId = widget.product.defaultLocationId;
     final defaultDays = widget.product.defaultBestBeforeDays;
-    if (defaultDays != null) {
+    if (defaultDays != null && !widget.product.doesNotSpoil) {
       _bestBeforeDate = DateTime.now().add(Duration(days: defaultDays));
     }
     _loadLocations();
@@ -116,7 +116,8 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
         'product_id': widget.product.id,
         'location_id': _selectedLocationId,
         'amount': amount,
-        'best_before_date': _bestBeforeDate?.toIso8601String().split('T').first,
+        'best_before_date':
+            widget.product.doesNotSpoil ? null : _bestBeforeDate?.toIso8601String().split('T').first,
         'price': price,
       });
       if (!mounted) return;
@@ -218,28 +219,32 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
                     ],
                   ),
             const SizedBox(height: 16),
-            Text(l10n.bestBeforeSectionLabel, style: Theme.of(context).textTheme.labelMedium),
-            const SizedBox(height: 4),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final days in [3, 7, 30])
+            if (widget.product.doesNotSpoil)
+              Text(l10n.doesNotSpoilStockHint, style: Theme.of(context).textTheme.bodySmall)
+            else ...[
+              Text(l10n.bestBeforeSectionLabel, style: Theme.of(context).textTheme.labelMedium),
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final days in [3, 7, 30])
+                    ActionChip(
+                      label: Text(l10n.inDaysChipLabel(days)),
+                      onPressed: () => _setBestBeforeOffset(days),
+                    ),
                   ActionChip(
-                    label: Text(l10n.inDaysChipLabel(days)),
-                    onPressed: () => _setBestBeforeOffset(days),
+                    avatar: const Icon(Icons.calendar_today, size: 16),
+                    label: Text(
+                      _bestBeforeDate == null
+                          ? l10n.pickDateLabel
+                          : _bestBeforeDate!.toIso8601String().split('T').first,
+                    ),
+                    onPressed: _pickBestBeforeDate,
                   ),
-                ActionChip(
-                  avatar: const Icon(Icons.calendar_today, size: 16),
-                  label: Text(
-                    _bestBeforeDate == null
-                        ? l10n.pickDateLabel
-                        : _bestBeforeDate!.toIso8601String().split('T').first,
-                  ),
-                  onPressed: _pickBestBeforeDate,
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
             const SizedBox(height: 16),
             Row(
               children: [

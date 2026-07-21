@@ -36,6 +36,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   String? get _imageUrl => widget.existingProduct?.imageUrl ?? widget.prefill?.imageUrl;
 
+  // #292: a product flagged "does not spoil" never needs a best-before date
+  // -- hide the picker for it instead of collecting a value _status will
+  // always ignore.
+  bool get _doesNotSpoil => widget.existingProduct?.doesNotSpoil ?? false;
+
   /// OFF's suggested category, unless the setting to suggest one is off
   /// (#71) -- gates both the hint shown while adding and the "leave it
   /// blank to accept the suggestion" fallback on save.
@@ -55,7 +60,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     _quantityUnit = widget.existingProduct?.quantityUnit ?? widget.prefill?.quantityUnit ?? 'pcs';
     _selectedLocationId = widget.existingProduct?.defaultLocationId;
     final defaultDays = widget.existingProduct?.defaultBestBeforeDays;
-    if (defaultDays != null) {
+    if (defaultDays != null && !_doesNotSpoil) {
       _bestBeforeDate = DateTime.now().add(Duration(days: defaultDays));
     }
     _loadLocations();
@@ -209,7 +214,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         'product_id': productId,
         'location_id': _selectedLocationId,
         'amount': amount,
-        'best_before_date': _bestBeforeDate?.toIso8601String().split('T').first,
+        'best_before_date': _doesNotSpoil ? null : _bestBeforeDate?.toIso8601String().split('T').first,
       });
       if (!mounted) return;
       await context.read<StockProvider>().refresh();
@@ -323,16 +328,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    _bestBeforeDate == null
-                        ? l10n.noBestBeforeDate
-                        : l10n.bestBeforeLabel(_bestBeforeDate!.toIso8601String().split('T').first),
+                if (_doesNotSpoil)
+                  Text(l10n.doesNotSpoilStockHint, style: Theme.of(context).textTheme.bodySmall)
+                else
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      _bestBeforeDate == null
+                          ? l10n.noBestBeforeDate
+                          : l10n.bestBeforeLabel(_bestBeforeDate!.toIso8601String().split('T').first),
+                    ),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: _pickBestBeforeDate,
                   ),
-                  trailing: const Icon(Icons.calendar_today),
-                  onTap: _pickBestBeforeDate,
-                ),
                 const SizedBox(height: 24),
                 FilledButton(
                   onPressed: _saving ? null : _save,

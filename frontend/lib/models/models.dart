@@ -35,6 +35,14 @@ class Product {
   final int? defaultOpenShelfLifeDays;
   final double? lowStockThreshold;
   final double? targetStockLevel;
+  // #292: shelf-stable goods (rice, canned food, spices) opt out of
+  // expiry-based status entirely -- stock.py's _status always reports "ok"
+  // for this product's entries regardless of best_before_date.
+  final bool doesNotSpoil;
+  // #292: optional per-product override of the global
+  // Settings.expiring_soon_days threshold (e.g. fresh fish wants a tighter
+  // window than the household default). Null falls back to the global value.
+  final int? expiringSoonDays;
 
   Product({
     required this.id,
@@ -50,6 +58,8 @@ class Product {
     this.defaultOpenShelfLifeDays,
     this.lowStockThreshold,
     this.targetStockLevel,
+    this.doesNotSpoil = false,
+    this.expiringSoonDays,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
@@ -66,6 +76,8 @@ class Product {
         defaultOpenShelfLifeDays: json['default_open_shelf_life_days'],
         lowStockThreshold: (json['low_stock_threshold'] as num?)?.toDouble(),
         targetStockLevel: (json['target_stock_level'] as num?)?.toDouble(),
+        doesNotSpoil: json['does_not_spoil'] as bool? ?? false,
+        expiringSoonDays: json['expiring_soon_days'],
       );
 }
 
